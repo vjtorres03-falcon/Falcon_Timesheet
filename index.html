@@ -541,7 +541,7 @@ function buildDesktop() {
     nameRow.className = 'day-name-hdr';
     const dayLabelCell = document.createElement('td');
     dayLabelCell.className = 'day-label-cell';
-    dayLabelCell.rowSpan = JOBS * 2 + 2;
+    dayLabelCell.rowSpan = JOBS * 2 + 3;
     dayLabelCell.textContent = day;
     nameRow.appendChild(dayLabelCell);
     const filler = document.createElement('td');
@@ -691,55 +691,70 @@ function updateMobileLabels(di) {
   }
 }
 
-// ── TOTALS ─────────────────────────────────────────────────────────
+// ── TOTALS ─────────────────────────────────────────────────────
 function calcTotals() {
-  const fmt = n => n > 0 ? (n === Math.round(n) ? String(n) : n.toFixed(2)) : '\u2014';
+  const fmt = n => n > 0 ? (n === Math.round(n) ? String(n) : n.toFixed(2)) : '—';
   const isMob = window.innerWidth <= 768;
   for (let di = 0; di < DAYS.length; di++) {
-    let forDay = 0; const empDay = Array(EMPS).fill(0);
+    let forReg=0, forDrv=0;
+    const empReg=Array(EMPS).fill(0), empDrv=Array(EMPS).fill(0);
     if (isMob) {
       document.querySelectorAll('.m-hrs[data-mday="' + di + '"]').forEach(inp => {
-        const v = parseFloat(inp.value) || 0;
-        if (inp.dataset.mcol === 'for' || inp.dataset.mcol === 'for-drive') forDay += v;
-        else if (inp.dataset.memp !== undefined) empDay[parseInt(inp.dataset.memp)] += v;
+        const v=parseFloat(inp.value)||0;
+        if (inp.dataset.mcol==='for') forReg+=v;
+        else if (inp.dataset.mcol==='for-drive') forDrv+=v;
+        else if (inp.dataset.memp!==undefined) {
+          if (inp.dataset.mdrive) empDrv[parseInt(inp.dataset.memp)]+=v;
+          else empReg[parseInt(inp.dataset.memp)]+=v;
+        }
       });
-      const hs = document.getElementById('mfor-' + di);
-      if (hs) { const s = hs.querySelector('span'); hs.textContent = fmt(forDay); if(s) hs.appendChild(s); }
-      for (let ei = 0; ei < EMPS; ei++) {
-        const he = document.getElementById('memp-' + di + '-' + ei);
-        if (he) { const s = he.querySelector('span'); he.textContent = fmt(empDay[ei]); if(s) he.appendChild(s); }
+      const hr=document.getElementById('mfor-reg-'+di); if(hr){const s=hr.querySelector('span');hr.textContent=fmt(forReg);if(s)hr.appendChild(s);}
+      const hd=document.getElementById('mfor-drv-'+di); if(hd){const s=hd.querySelector('span');hd.textContent=fmt(forDrv);if(s)hd.appendChild(s);}
+      for(let ei=0;ei<EMPS;ei++){
+        const er=document.getElementById('memp-reg-'+di+'-'+ei); if(er){const s=er.querySelector('span');er.textContent=fmt(empReg[ei]);if(s)er.appendChild(s);}
+        const ed=document.getElementById('memp-drv-'+di+'-'+ei); if(ed){const s=ed.querySelector('span');ed.textContent=fmt(empDrv[ei]);if(s)ed.appendChild(s);}
       }
     } else {
       document.querySelectorAll('.d-hrs[data-day="' + di + '"]').forEach(inp => {
-        const v = parseFloat(inp.value) || 0;
-        if (inp.dataset.col === 'for' || inp.dataset.col === 'for-drive') forDay += v;
-        else if (inp.dataset.emp !== undefined) empDay[parseInt(inp.dataset.emp)] += v;
+        const v=parseFloat(inp.value)||0;
+        if (inp.dataset.col==='for') forReg+=v;
+        else if (inp.dataset.col==='for-drive') forDrv+=v;
+        else if (inp.dataset.emp!==undefined) {
+          if (inp.dataset.drive) empDrv[parseInt(inp.dataset.emp)]+=v;
+          else empReg[parseInt(inp.dataset.emp)]+=v;
+        }
       });
-      const ds = document.getElementById('dfor-' + di); if (ds) ds.textContent = fmt(forDay);
-      for (let ei = 0; ei < EMPS; ei++) {
-        const de = document.getElementById('demp-' + di + '-' + ei); if (de) de.textContent = fmt(empDay[ei]);
+      const dr=document.getElementById('dfor-reg-'+di); if(dr) dr.textContent=fmt(forReg);
+      const dd=document.getElementById('dfor-drv-'+di); if(dd) dd.textContent=fmt(forDrv);
+      for(let ei=0;ei<EMPS;ei++){
+        const er=document.getElementById('demp-reg-'+di+'-'+ei); if(er) er.textContent=fmt(empReg[ei]);
+        const ed=document.getElementById('demp-drv-'+di+'-'+ei); if(ed) ed.textContent=fmt(empDrv[ei]);
       }
     }
   }
-  let gf = 0; const ge = Array(EMPS).fill(0);
-  document.querySelectorAll(isMob ? '.m-hrs' : '.d-hrs').forEach(inp => {
-    const v = parseFloat(inp.value) || 0;
-    const col = isMob ? inp.dataset.mcol : inp.dataset.col;
-    const emp = isMob ? inp.dataset.memp : inp.dataset.emp;
-    if (col === 'for' || col === 'for-drive') gf += v;
-    else if (emp !== undefined) ge[parseInt(emp)] += v;
+  let gfReg=0,gfDrv=0; const geReg=Array(EMPS).fill(0),geDrv=Array(EMPS).fill(0);
+  document.querySelectorAll(isMob?'.m-hrs':'.d-hrs').forEach(inp=>{
+    const v=parseFloat(inp.value)||0;
+    const col=isMob?inp.dataset.mcol:inp.dataset.col;
+    const emp=isMob?inp.dataset.memp:inp.dataset.emp;
+    const drv=isMob?inp.dataset.mdrive:inp.dataset.drive;
+    if(col==='for') gfReg+=v;
+    else if(col==='for-drive') gfDrv+=v;
+    else if(emp!==undefined){ if(drv) geDrv[parseInt(emp)]+=v; else geReg[parseInt(emp)]+=v; }
   });
-  if (isMob) {
-    const mg = document.getElementById('mgfor');
-    if (mg) { const s = mg.querySelector('span'); mg.textContent = fmt(gf); if(s) mg.appendChild(s); }
-    for (let ei = 0; ei < EMPS; ei++) {
-      const mge = document.getElementById('mgemp-' + ei);
-      if (mge) { const s = mge.querySelector('span'); mge.textContent = fmt(ge[ei]); if(s) mge.appendChild(s); }
+  if(isMob){
+    const mgr=document.getElementById('mgfor-reg'); if(mgr){const s=mgr.querySelector('span');mgr.textContent=fmt(gfReg);if(s)mgr.appendChild(s);}
+    const mgd=document.getElementById('mgfor-drv'); if(mgd){const s=mgd.querySelector('span');mgd.textContent=fmt(gfDrv);if(s)mgd.appendChild(s);}
+    for(let ei=0;ei<EMPS;ei++){
+      const er=document.getElementById('mgemp-reg-'+ei); if(er){const s=er.querySelector('span');er.textContent=fmt(geReg[ei]);if(s)er.appendChild(s);}
+      const ed=document.getElementById('mgemp-drv-'+ei); if(ed){const s=ed.querySelector('span');ed.textContent=fmt(geDrv[ei]);if(s)ed.appendChild(s);}
     }
   } else {
-    const dg = document.getElementById('dgfor'); if (dg) dg.textContent = fmt(gf);
-    for (let ei = 0; ei < EMPS; ei++) {
-      const dge = document.getElementById('dgemp-' + ei); if (dge) dge.textContent = fmt(ge[ei]);
+    const dgr=document.getElementById('dgfor-reg'); if(dgr) dgr.textContent=fmt(gfReg);
+    const dgd=document.getElementById('dgfor-drv'); if(dgd) dgd.textContent=fmt(gfDrv);
+    for(let ei=0;ei<EMPS;ei++){
+      const er=document.getElementById('dgemp-reg-'+ei); if(er) er.textContent=fmt(geReg[ei]);
+      const ed=document.getElementById('dgemp-drv-'+ei); if(ed) ed.textContent=fmt(geDrv[ei]);
     }
   }
 }
@@ -795,11 +810,11 @@ function submitTimesheet() {
       }
     }
     if (hasDay) {
-      const ft = isMob ? document.getElementById('mfor-'+di) : document.getElementById('dfor-'+di);
+      const ft = isMob ? document.getElementById('mfor-reg-'+di) : document.getElementById('dfor-reg-'+di);
       const ftxt = ft ? ft.textContent.replace(/\n.*/,'') : '\u2014';
       daySection += '  Day Total: Foreman=' + ftxt;
       for (let ei=0;ei<EMPS;ei++) {
-        const te = isMob ? document.getElementById('memp-'+di+'-'+ei) : document.getElementById('demp-'+di+'-'+ei);
+        const te = isMob ? document.getElementById('memp-reg-'+di+'-'+ei) : document.getElementById('demp-reg-'+di+'-'+ei);
         const t = te ? te.textContent.replace(/\n.*/,'') : '\u2014';
         if (t && t!=='\u2014') daySection += ', ' + empNames[ei] + '=' + t;
       }
@@ -808,10 +823,10 @@ function submitTimesheet() {
   });
 
   body += '\n' + '='.repeat(52) + '\nWEEK TOTALS\n';
-  const gf = isMob ? document.getElementById('mgfor') : document.getElementById('dgfor');
+  const gf = isMob ? document.getElementById('mgfor-reg') : document.getElementById('dgfor-reg');
   body += 'Foreman     : ' + (gf ? gf.textContent.replace(/\n.*/,'') : '\u2014') + '\n';
   for (let ei=0;ei<EMPS;ei++) {
-    const te = isMob ? document.getElementById('mgemp-'+ei) : document.getElementById('dgemp-'+ei);
+    const te = isMob ? document.getElementById('mgemp-reg-'+ei) : document.getElementById('dgemp-reg-'+ei);
     const t = te ? te.textContent.replace(/\n.*/,'') : '\u2014';
     if (t && t!=='\u2014') body += 'Emp ' + (ei+1) + '        : ' + t + '\n';
   }
