@@ -579,7 +579,7 @@ function buildDesktop() {
 
       const dr = document.createElement('tr');
       dr.className = 'drv' + (ji===JOBS-1?' daysep':'');
-      const dl = document.createElement('td'); dl.className = 'dlabel'; dl.colSpan = 3;
+      const dl = document.createElement('td'); dl.className = 'dlabel'; dl.colSpan = 2;
       dl.textContent = '\u21B3 Drive Time (Job ' + (ji+1) + ')'; dr.appendChild(dl);
       const ds = document.createElement('td');
       ds.innerHTML = '<input type="number" min="0" max="24" step="0.25" placeholder="0" data-day="' + di + '" data-job="' + ji + '" data-col="for-drive" class="d-hrs" oninput="calcTotals()">';
@@ -614,8 +614,8 @@ function buildDesktop() {
 
   const gr = document.createElement('tr'); gr.className = 'grand-row';
   const gl = document.createElement('td'); gl.colSpan = 4; gl.className = 'grand-lbl';
-  gl.textContent = '\u26A1 WEEK \u2014 Reg Hrs'; gr.appendChild(gl);
-  const gs = document.createElement('td'); gs.id = 'dgfor-reg'; gs.textContent = '\u2014'; gr.appendChild(gs);
+  gl.id = 'dgfor-reg-lbl';
+  gl.innerHTML = '\u26A1 WEEK \u2014 Reg Hrs &nbsp;&nbsp; <span id="dgfor-reg" style="font-size:1rem;"></span>'; gr.appendChild(gl);
   for (let ei = 0; ei < EMPS; ei++) {
     const ge = document.createElement('td'); ge.id = 'dgemp-reg-' + ei; ge.textContent = '\u2014'; gr.appendChild(ge);
   }
@@ -624,8 +624,7 @@ function buildDesktop() {
   gr2.style.cssText = 'background:#FFFBEA;';
   const gl2 = document.createElement('td'); gl2.colSpan = 4; gl2.className = 'grand-lbl';
   gl2.style.cssText = 'background:#C8B000;font-style:italic;';
-  gl2.textContent = '\u26A1 WEEK \u2014 Drive Time'; gr2.appendChild(gl2);
-  const gs2 = document.createElement('td'); gs2.id = 'dgfor-drv'; gs2.textContent = '\u2014'; gr2.appendChild(gs2);
+  gl2.innerHTML = '\u26A1 WEEK \u2014 Drive Time &nbsp;&nbsp; <span id="dgfor-drv" style="font-size:1rem;"></span>'; gr2.appendChild(gl2);
   for (let ei = 0; ei < EMPS; ei++) {
     const ge2 = document.createElement('td'); ge2.id = 'dgemp-drv-' + ei; ge2.textContent = '\u2014'; gr2.appendChild(ge2);
   }
