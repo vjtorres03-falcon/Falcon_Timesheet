@@ -594,22 +594,42 @@ function buildDesktop() {
 
     const tr = document.createElement('tr'); tr.className = 'tot-row';
     const tl = document.createElement('td'); tl.colSpan = 3; tl.className = 'tot-lbl';
-    tl.textContent = day + ' Total'; tr.appendChild(tl);
-    const st = document.createElement('td'); st.id = 'dfor-' + di; st.textContent = '\u2014'; tr.appendChild(st);
+    tl.textContent = day + ' — Reg Hrs'; tr.appendChild(tl);
+    const st = document.createElement('td'); st.id = 'dfor-reg-' + di; st.textContent = '\u2014'; tr.appendChild(st);
     for (let ei = 0; ei < EMPS; ei++) {
-      const et = document.createElement('td'); et.id = 'demp-' + di + '-' + ei; et.textContent = '\u2014'; tr.appendChild(et);
+      const et = document.createElement('td'); et.id = 'demp-reg-' + di + '-' + ei; et.textContent = '\u2014'; tr.appendChild(et);
     }
     tbody.appendChild(tr);
+    const tr2 = document.createElement('tr'); tr2.className = 'tot-row';
+    tr2.style.cssText = 'background:#FFFBEA;';
+    const tl2 = document.createElement('td'); tl2.colSpan = 3; tl2.className = 'tot-lbl';
+    tl2.style.cssText = 'background:#D4B800;font-style:italic;';
+    tl2.textContent = day + ' — Drive Time'; tr2.appendChild(tl2);
+    const st2 = document.createElement('td'); st2.id = 'dfor-drv-' + di; st2.textContent = '\u2014'; tr2.appendChild(st2);
+    for (let ei = 0; ei < EMPS; ei++) {
+      const et2 = document.createElement('td'); et2.id = 'demp-drv-' + di + '-' + ei; et2.textContent = '\u2014'; tr2.appendChild(et2);
+    }
+    tbody.appendChild(tr2);
   });
 
   const gr = document.createElement('tr'); gr.className = 'grand-row';
   const gl = document.createElement('td'); gl.colSpan = 4; gl.className = 'grand-lbl';
-  gl.textContent = '\u26A1 WEEK TOTAL'; gr.appendChild(gl);
-  const gs = document.createElement('td'); gs.id = 'dgfor'; gs.textContent = '\u2014'; gr.appendChild(gs);
+  gl.textContent = '\u26A1 WEEK \u2014 Reg Hrs'; gr.appendChild(gl);
+  const gs = document.createElement('td'); gs.id = 'dgfor-reg'; gs.textContent = '\u2014'; gr.appendChild(gs);
   for (let ei = 0; ei < EMPS; ei++) {
-    const ge = document.createElement('td'); ge.id = 'dgemp-' + ei; ge.textContent = '\u2014'; gr.appendChild(ge);
+    const ge = document.createElement('td'); ge.id = 'dgemp-reg-' + ei; ge.textContent = '\u2014'; gr.appendChild(ge);
   }
   document.getElementById('desktopBody').appendChild(gr);
+  const gr2 = document.createElement('tr'); gr2.className = 'grand-row';
+  gr2.style.cssText = 'background:#FFFBEA;';
+  const gl2 = document.createElement('td'); gl2.colSpan = 4; gl2.className = 'grand-lbl';
+  gl2.style.cssText = 'background:#C8B000;font-style:italic;';
+  gl2.textContent = '\u26A1 WEEK \u2014 Drive Time'; gr2.appendChild(gl2);
+  const gs2 = document.createElement('td'); gs2.id = 'dgfor-drv'; gs2.textContent = '\u2014'; gr2.appendChild(gs2);
+  for (let ei = 0; ei < EMPS; ei++) {
+    const ge2 = document.createElement('td'); ge2.id = 'dgemp-drv-' + ei; ge2.textContent = '\u2014'; gr2.appendChild(ge2);
+  }
+  document.getElementById('desktopBody').appendChild(gr2);
 }
 
 // ── BUILD MOBILE ───────────────────────────────────────────────────
@@ -648,9 +668,11 @@ function buildMobile() {
         '<div class="drive-block"><span class="drive-lbl">\u21B3 Drive Time \u2014 Job ' + (ji+1) + '</span>' +
         '<div class="drive-grid">' + driveGrid + '</div></div></div>';
     }
-    let totCells = '<div class="tot-item" id="mfor-' + di + '">\u2014<span>Foreman</span></div>';
+    let totCells = '<div class="tot-item" id="mfor-reg-' + di + '">\u2014<span>Foreman Reg</span></div>' +
+      '<div class="tot-item" id="mfor-drv-' + di + '" style="background:#FFFBEA;border-radius:4px;">\u2014<span style="color:var(--ydark);">Foreman Drive</span></div>';
     for (let ei = 0; ei < EMPS; ei++) {
-      totCells += '<div class="tot-item" id="memp-' + di + '-' + ei + '">\u2014<span id="mtot-lbl-' + di + '-' + ei + '">Emp ' + (ei+1) + '</span></div>';
+      totCells += '<div class="tot-item" id="memp-reg-' + di + '-' + ei + '">\u2014<span id="mtot-lbl-' + di + '-' + ei + '">Emp ' + (ei+1) + ' Reg</span></div>' +
+        '<div class="tot-item" id="memp-drv-' + di + '-' + ei + '" style="background:#FFFBEA;border-radius:4px;">\u2014<span style="color:var(--ydark);">Emp ' + (ei+1) + ' Drive</span></div>';
     }
     card.innerHTML =
       '<div class="day-card-hdr">' + day + ' <span id="mday-tot-lbl-' + di + '"></span></div>' +
@@ -667,9 +689,11 @@ function buildMobile() {
 
   const gc = document.createElement('div');
   gc.className = 'grand-card';
-  let grandItems = '<div class="grand-item" id="mgfor">\u2014<span>Foreman</span></div>';
+  let grandItems = '<div class="grand-item" id="mgfor-reg">\u2014<span>Foreman Reg</span></div>' +
+    '<div class="grand-item" id="mgfor-drv" style="background:#FFF3A0;">\u2014<span>Foreman Drive</span></div>';
   for (let ei = 0; ei < EMPS; ei++) {
-    grandItems += '<div class="grand-item" id="mgemp-' + ei + '">\u2014<span>Emp ' + (ei+1) + '</span></div>';
+    grandItems += '<div class="grand-item" id="mgemp-reg-' + ei + '">\u2014<span>Emp ' + (ei+1) + ' Reg</span></div>' +
+      '<div class="grand-item" id="mgemp-drv-' + ei + '" style="background:#FFF3A0;">\u2014<span>Emp ' + (ei+1) + ' Drive</span></div>';
   }
   gc.innerHTML = '<h3>\u26A1 Week Total Hours</h3><div class="grand-grid">' + grandItems + '</div>';
   wrap.appendChild(gc);
