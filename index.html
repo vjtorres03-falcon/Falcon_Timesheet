@@ -356,6 +356,9 @@ tr.grand-row td { border-top: 3px solid var(--black); }
   </div>
   <div class="hdr-right">
     <button class="submit-btn" onclick="submitTimesheet()">⚡ Submit</button>
+    <div style="font-family:'Barlow',sans-serif;font-size:0.52rem;color:#888;text-align:center;margin-top:4px;line-height:1.4;">
+      Submits directly to<br>Falcon Electric records.
+    </div>
     <button class="btn-save"   onclick="saveProgress()">💾 Save</button>
     <button class="btn-clear"  onclick="clearForm()">🗑 New Week</button>
     <button class="btn-print"  onclick="printSheet()">🖨 Print</button>
@@ -372,6 +375,10 @@ tr.grand-row td { border-top: 3px solid var(--black); }
   <div class="info-field">
     <label>Foreman</label>
     <input type="text" id="foreman" placeholder="Full name">
+  </div>
+  <div class="info-field">
+    <label>Foreman Email (for your copy)</label>
+    <input type="email" id="foremanEmail" placeholder="your@email.com">
   </div>
   <div class="info-field full">
     <label>Notes / Instructions</label>
@@ -420,16 +427,21 @@ tr.grand-row td { border-top: 3px solid var(--black); }
 const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 const JOBS = 6;
 const EMPS = 6;
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxmLM2_rTVzXoh0Re_WkQwFWU2A0-Kv_gOPO9SGJaWnum39lgk8X4zL6JcSFnl8L3D6bQ/exec";
 const EMAILS = "projectmanager@falconelectricinc.com,berit@falconelectricinc.com,projectassistant@falconelectricinc.com,bonnie@falconelectricinc.com";
 
 // ── AUTO WEEK ENDING ───────────────────────────────────────────────
 function getNextSunday() {
   const today = new Date();
-  const day = today.getDay();
-  const diff = day === 0 ? 0 : 7 - day;
+  const day = today.getDay(); // 0=Sun, 1=Mon ... 6=Sat
+  const diff = day === 0 ? 7 : 7 - day; // if today IS Sunday, go to NEXT Sunday
   const sun = new Date(today);
   sun.setDate(today.getDate() + diff);
-  return sun.toISOString().split('T')[0];
+  // Use local date to avoid UTC timezone offset issues
+  const y = sun.getFullYear();
+  const m = String(sun.getMonth()+1).padStart(2,'0');
+  const d = String(sun.getDate()).padStart(2,'0');
+  return y + '-' + m + '-' + d;
 }
 
 // ── SAVE ───────────────────────────────────────────────────────────
@@ -437,6 +449,7 @@ function saveProgress() {
   const data = {
     weekEnding: document.getElementById('weekEnding').value,
     foreman:    document.getElementById('foreman').value,
+    foremanEmail: document.getElementById('foremanEmail') ? document.getElementById('foremanEmail').value : '',
     addlNotes:  document.getElementById('addlNotes').value,
     saved:      new Date().toISOString(),
     fields:     {}
@@ -468,6 +481,7 @@ function loadSaved() {
     const data = JSON.parse(raw);
     if (data.weekEnding) document.getElementById('weekEnding').value = data.weekEnding;
     if (data.foreman)    document.getElementById('foreman').value    = data.foreman;
+    const feEl = document.getElementById('foremanEmail'); if (feEl && data.foremanEmail) feEl.value = data.foremanEmail;
     if (data.addlNotes)  document.getElementById('addlNotes').value  = data.addlNotes;
     document.querySelectorAll('input').forEach(inp => {
       const key = inp.id || (inp.dataset.day||inp.dataset.mday||'') + '_' +
@@ -491,6 +505,7 @@ function clearForm() {
   if (!confirm('Clear all entries and start a new week?')) return;
   localStorage.removeItem('falconTimesheet');
   document.querySelectorAll('input').forEach(i => i.value = '');
+  // foremanEmail cleared above
   document.getElementById('weekEnding').value = getNextSunday();
   calcTotals();
   for (let di = 0; di < DAYS.length; di++) updateMobileLabels(di);
