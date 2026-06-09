@@ -194,14 +194,8 @@ tr.tot-row td {
   padding: 5px 3px; border-top: 2px solid var(--black); color: var(--black);
 }
 tr.tot-row td.tot-lbl { background: var(--yellow); font-size: 0.68rem; letter-spacing: 0.5px; text-transform: uppercase; }
-tr.grand-row td {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 800; font-size: 0.82rem; text-align: center;
-  padding: 6px 3px; border-top: 3px solid var(--black); color: var(--black);
-}
-tr.grand-row td.grand-lbl {
-  font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase;
-}
+tr.grand-row td { border-top: 3px solid var(--black); }
+
 
 /* ── MOBILE ── */
 @media (max-width: 768px) {
@@ -335,11 +329,16 @@ tr.grand-row td.grand-lbl {
   tr.drv td { background: #FFFBEA !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   tr.tot-row td { background: #FFF5CC !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   tr.tot-row td.tot-lbl { background: #F5C400 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  tr.grand-row td { background: #FFF0A0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  tr.grand-row td.grand-lbl { background: #111 !important; color: #F5C400 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  tr.grand-row td { border-top: 3px solid var(--black); }
+  
   #toast { display: none; }
   .confirmation-overlay { display: none !important; }
 }
+
+/* ── DAY PANELS ── */
+.day-panel { display: none !important; }
+.day-panel.active { display: block !important; }
+
 </style>
 </head>
 <body>
@@ -646,15 +645,6 @@ function switchDay(di) {
   const tab = document.querySelectorAll('.day-tab')[di];
   if (tab) tab.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
 }
-function switchDay_old(di) {
-  document.querySelectorAll('.day-tab').forEach((t,i) => {
-    t.className = 'day-tab' + (i === di ? ' active' : '') + (t.dataset.hasData === '1' ? ' has-data' : '');
-  });
-  // Scroll tab into view
-  const tab = document.querySelectorAll('.day-tab')[di];
-  if (tab) tab.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
-}
-
 function markTabData(di) {
   const tab = document.querySelectorAll('.day-tab')[di];
   if (!tab) return;
