@@ -653,7 +653,14 @@ function buildMobile() {
 
 // ── LATE MODAL ───────────────────────────────────────────────────────
 function isLateSubmission() {
-  return new Date().getDay() !== 1;
+  const weVal = document.getElementById('weekEnding').value;
+  if (!weVal) return false;
+  const weekEnding = new Date(weVal + 'T00:00:00'); // week ending Sunday
+  const monday = new Date(weekEnding);
+  monday.setDate(weekEnding.getDate() + 1); // Monday after week ending
+  monday.setHours(23, 59, 59, 999); // end of Monday
+  const now = new Date();
+  return now > monday; // late if past end of day Monday after week ending
 }
 function toggleLateSubmit() {
   const cb = document.getElementById('lateAck');
