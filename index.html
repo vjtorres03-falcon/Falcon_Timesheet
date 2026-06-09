@@ -781,32 +781,8 @@ function buildDesktop() {
     tbody.appendChild(tr2);
   });
 
-      const gr = document.createElement('tr'); gr.className = 'grand-row';
-  const gl = document.createElement('td'); gl.colSpan = 3;
-  gl.style.cssText = 'background:#111;color:var(--yellow);font-family:Barlow Condensed,sans-serif;font-weight:800;font-size:0.82rem;letter-spacing:1px;text-transform:uppercase;padding:6px 10px;border-top:3px solid #111;';
-  gl.textContent = '\u26A1 WEEK \u2014 Reg Hrs'; gr.appendChild(gl);
-  const gs = document.createElement('td'); gs.id = 'dgfor-reg';
-  gs.style.cssText = 'background:#FFF0A0;text-align:center;font-weight:800;font-size:0.85rem;padding:6px 3px;border-top:3px solid #111;color:#111;';
-  gs.textContent = '\u2014'; gr.appendChild(gs);
-  for (let ei = 0; ei < EMPS; ei++) {
-    const ge = document.createElement('td'); ge.id = 'dgemp-reg-' + ei;
-    ge.style.cssText = 'background:#FFF0A0;text-align:center;font-weight:800;font-size:0.85rem;padding:6px 3px;border-top:3px solid #111;color:#111;';
-    ge.textContent = '\u2014'; gr.appendChild(ge);
-  }
-  document.getElementById('desktopBody').appendChild(gr);
-      const gr2 = document.createElement('tr'); gr2.className = 'grand-row';
-  const gl2 = document.createElement('td'); gl2.colSpan = 3;
-  gl2.style.cssText = 'background:#3a3000;color:#FFE566;font-family:Barlow Condensed,sans-serif;font-weight:800;font-style:italic;font-size:0.82rem;letter-spacing:1px;text-transform:uppercase;padding:6px 10px;border-top:1px solid #555;';
-  gl2.textContent = '\u26A1 WEEK \u2014 Drive Time'; gr2.appendChild(gl2);
-  const gs2 = document.createElement('td'); gs2.id = 'dgfor-drv';
-  gs2.style.cssText = 'background:#FFF5CC;text-align:center;font-weight:800;font-size:0.85rem;padding:6px 3px;border-top:1px solid #555;color:#333;';
-  gs2.textContent = '\u2014'; gr2.appendChild(gs2);
-  for (let ei = 0; ei < EMPS; ei++) {
-    const ge2 = document.createElement('td'); ge2.id = 'dgemp-drv-' + ei;
-    ge2.style.cssText = 'background:#FFF5CC;text-align:center;font-weight:800;font-size:0.85rem;padding:6px 3px;border-top:1px solid #555;color:#333;';
-    ge2.textContent = '\u2014'; gr2.appendChild(ge2);
-  }
-  document.getElementById('desktopBody').appendChild(gr2);
+        // Week grand totals removed
+
 }
 
 // ── BUILD MOBILE ───────────────────────────────────────────────────
@@ -884,16 +860,8 @@ function buildMobile() {
     });
   });
 
-  const gc = document.createElement('div');
-  gc.className = 'grand-card';
-  let grandItems = '<div class="grand-item" id="mgfor-reg">\u2014<span>Foreman Reg</span></div>' +
-    '<div class="grand-item" id="mgfor-drv" style="background:#FFF3A0;">\u2014<span>Foreman Drive</span></div>';
-  for (let ei = 0; ei < EMPS; ei++) {
-    grandItems += '<div class="grand-item" id="mgemp-reg-' + ei + '">\u2014<span>Emp ' + (ei+1) + ' Reg</span></div>' +
-      '<div class="grand-item" id="mgemp-drv-' + ei + '" style="background:#FFF3A0;">\u2014<span>Emp ' + (ei+1) + ' Drive</span></div>';
-  }
-  gc.innerHTML = '<h3>\u26A1 Week Total Hours</h3><div class="grand-grid">' + grandItems + '</div>';
-  wrap.appendChild(gc);
+  // Mobile grand total removed
+
 }
 
 // ── UPDATE MOBILE LABELS ────────────────────────────────────────────
@@ -953,33 +921,8 @@ function calcTotals() {
       }
     }
   }
-  let gfReg=0,gfDrv=0; const geReg=Array(EMPS).fill(0),geDrv=Array(EMPS).fill(0);
-  document.querySelectorAll(isMob?'.m-hrs':'.d-hrs').forEach(inp=>{
-    const v=parseFloat(inp.value)||0;
-    const col=isMob?inp.dataset.mcol:inp.dataset.col;
-    const emp=isMob?inp.dataset.memp:inp.dataset.emp;
-    const drv=isMob?inp.dataset.mdrive:inp.dataset.drive;
-    if(col==='for') gfReg+=v;
-    else if(col==='for-drive') gfDrv+=v;
-    else if(emp!==undefined){ if(drv) geDrv[parseInt(emp)]+=v; else geReg[parseInt(emp)]+=v; }
-  });
-  if(isMob){
-    const mgr=document.getElementById('mgfor-reg'); if(mgr){const s=mgr.querySelector('span');mgr.textContent=fmt(gfReg);if(s)mgr.appendChild(s);}
-    const mgd=document.getElementById('mgfor-drv'); if(mgd){const s=mgd.querySelector('span');mgd.textContent=fmt(gfDrv);if(s)mgd.appendChild(s);}
-    for(let ei=0;ei<EMPS;ei++){
-      const er=document.getElementById('mgemp-reg-'+ei); if(er){const s=er.querySelector('span');er.textContent=fmt(geReg[ei]);if(s)er.appendChild(s);}
-      const ed=document.getElementById('mgemp-drv-'+ei); if(ed){const s=ed.querySelector('span');ed.textContent=fmt(geDrv[ei]);if(s)ed.appendChild(s);}
-    }
-  } else {
-    const dgr=document.getElementById('dgfor-reg'); if(dgr) dgr.textContent=fmt(gfReg);
-    const dgd=document.getElementById('dgfor-drv'); if(dgd) dgd.textContent=fmt(gfDrv);
-    for(let ei=0;ei<EMPS;ei++){
-      const er=document.getElementById('dgemp-reg-'+ei); if(er) er.textContent=fmt(geReg[ei]);
-      const ed=document.getElementById('dgemp-drv-'+ei); if(ed) ed.textContent=fmt(geDrv[ei]);
-    }
-  }
-  checkOT();
 }
+
 
 // ── SUBMIT ─────────────────────────────────────────────────────
 function submitTimesheet() {
@@ -1061,10 +1004,71 @@ function doSubmit() {
     if (t && t!=='—') body += 'Emp ' + (ei+1) + '        : ' + t + '\n';
   }
 
-  const subject = encodeURIComponent('Falcon Electric Timesheet — Week Ending ' + (weekEnding||'N/A') + ' — ' + (foreman||'Crew'));
-  window.location.href = 'mailto:' + EMAILS + '?subject=' + subject + '&body=' + encodeURIComponent(body);
-  showConfirm(body);
-  showToast('⚡ Email client opening...');
+  // Build structured data for Google Sheet
+  const isMob2 = window.innerWidth <= 1024;
+  const sheetRows = [];
+
+  DAYS.forEach((day, di) => {
+    const empNames = Array.from({length:EMPS}, function(_,ei) {
+      const mn = document.querySelector('.m-emp-name[data-mday="' + di + '"][data-col="' + ei + '"]');
+      const dn = document.querySelector('.d-emp-name[data-day="' + di + '"][data-col="' + ei + '"]');
+      return (mn && mn.value.trim()) || (dn && dn.value.trim()) || '';
+    });
+
+    for (let ji = 0; ji < JOBS; ji++) {
+      const g = function(col, emp, drive) {
+        if (isMob2) {
+          if (col) { const el = document.querySelector('input[data-mday="' + di + '"][data-mjob="' + ji + '"][data-mcol="' + col + '"]'); return el ? el.value : ''; }
+          const s2 = drive ? 'input[data-mday="' + di + '"][data-mjob="' + ji + '"][data-memp="' + emp + '"][data-mdrive]' : 'input[data-mday="' + di + '"][data-mjob="' + ji + '"][data-memp="' + emp + '"]:not([data-mdrive])';
+          const el2 = document.querySelector(s2); return el2 ? el2.value : '';
+        } else {
+          if (col) { const el = document.querySelector('input[data-day="' + di + '"][data-job="' + ji + '"][data-col="' + col + '"]'); return el ? el.value : ''; }
+          const s2 = drive ? 'input[data-day="' + di + '"][data-job="' + ji + '"][data-emp="' + emp + '"][data-drive]' : 'input[data-day="' + di + '"][data-job="' + ji + '"][data-emp="' + emp + '"]:not([data-drive])';
+          const el2 = document.querySelector(s2); return el2 ? el2.value : '';
+        }
+      };
+
+      const jName = g('jobname'), jNum = g('jobnum');
+      const fHrs = g('for'), fDrv = g('for-drive');
+      const eHrs = [], eDrv = [];
+      for (let ei=0;ei<EMPS;ei++){eHrs.push(g(null,ei,false));eDrv.push(g(null,ei,true));}
+
+      if (jName || jNum || fHrs || eHrs.some(function(v){return v;})) {
+        const row = {
+          day: day, jobName: jName, jobNum: jNum,
+          foremanHrs: fHrs, foremanDrive: fDrv
+        };
+        for (let ei=0;ei<EMPS;ei++){
+          row['emp'+(ei+1)+'Name']  = empNames[ei];
+          row['emp'+(ei+1)+'Hrs']   = eHrs[ei];
+          row['emp'+(ei+1)+'Drive'] = eDrv[ei];
+        }
+        sheetRows.push(row);
+      }
+    }
+  });
+
+  const payload = {
+    weekEnding:   weekEnding,
+    foreman:      foreman,
+    foremanEmail: foremanEmail,
+    notes:        notes,
+    rows:         sheetRows
+  };
+
+  showToast('\u26A1 Submitting...');
+  fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  }).then(function() {
+    showToast('\u2713 Submitted successfully!');
+    showConfirm(body);
+  }).catch(function(err) {
+    showToast('\u26A0 Error — please try again');
+    console.error(err);
+  });
 }
 
 
