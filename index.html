@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Falcon Electric — Timesheet</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -137,7 +137,7 @@ table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
   text-transform: uppercase; padding: 5px 3px; border-right: 2px solid var(--yellow);
   white-space: nowrap;
 }
-.day-name-hdr td.emp-name-cell { background: #1e1e1e; }
+.day-name-hdr td.emp-name-cell { background: #3a3000; }
 .day-name-hdr td.emp-name-cell input {
   width: 100%; background: transparent; border: none; border-bottom: 1px solid #444;
   color: #ddd; text-align: center; font-family: 'Barlow', sans-serif;
@@ -226,18 +226,18 @@ tr.grand-row td.grand-lbl {
   }
   .day-emp-section .emp-section-lbl {
     font-family: 'Barlow Condensed', sans-serif; font-size: 0.6rem;
-    color: var(--yellow); letter-spacing: 2px; text-transform: uppercase;
+    color: #FFE566; letter-spacing: 2px; text-transform: uppercase;
     font-weight: 700; margin-bottom: 6px; display: block;
   }
   .day-emp-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; }
   .day-emp-item { display: flex; flex-direction: column; gap: 1px; }
-  .day-emp-item label { font-size: 0.5rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+  .day-emp-item label { font-size: 0.5rem; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; }
   .day-emp-item input {
-    background: transparent; border: none; border-bottom: 1px solid #444;
-    color: #fff; font-family: 'Barlow', sans-serif; font-size: 0.78rem;
+    background: transparent; border: none; border-bottom: 1.5px solid var(--yellow);
+    color: #FFE566; font-family: 'Barlow', sans-serif; font-size: 0.78rem;
     padding: 3px 2px; outline: none; width: 100%; border-radius: 0;
   }
-  .day-emp-item input::placeholder { color: #555; }
+  .day-emp-item input::placeholder { color: #998833; }
 
   .job-block { border-bottom: 1px solid var(--border); }
   .job-block-hdr {
@@ -534,6 +534,161 @@ function validateForm() {
   return errors;
 }
 
+
+// ── AUTO-SAVE EVERY 2 MINUTES ──────────────────────────────────────
+setInterval(function() {
+  saveProgress();
+  const ind = document.getElementById('saveIndicator');
+  if (ind) ind.textContent = '✓ Auto-saved at ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+}, 120000);
+
+// ── CHAR COUNTER ────────────────────────────────────────────────────
+function updateCharCounter() {
+  const inp = document.getElementById('addlNotes');
+  const counter = document.getElementById('notesCounter');
+  if (!inp || !counter) return;
+  const len = inp.value.length;
+  counter.textContent = len + '/200';
+  counter.className = 'char-counter' + (len > 160 ? ' near-limit' : '');
+}
+
+// ── OT FLAG ─────────────────────────────────────────────────────────
+function checkOT() {
+  const isMob = window.innerWidth <= 768;
+  const weekTotals = Array(EMPS).fill(0);
+  let forWeek = 0;
+
+  for (let di = 0; di < DAYS.length; di++) {
+    let forDay = 0;
+    const empDay = Array(EMPS).fill(0);
+
+    if (isMob) {
+      document.querySelectorAll('.m-hrs[data-mday="' + di + '"]').forEach(inp => {
+        const v = parseFloat(inp.value) || 0;
+        if (inp.dataset.mcol === 'for') { forDay += v; forWeek += v; }
+        else if (inp.dataset.memp !== undefined && !inp.dataset.mdrive) {
+          empDay[parseInt(inp.dataset.memp)] += v;
+          weekTotals[parseInt(inp.dataset.memp)] += v;
+        }
+      });
+    } else {
+      document.querySelectorAll('.d-hrs[data-day="' + di + '"]').forEach(inp => {
+        const v = parseFloat(inp.value) || 0;
+        if (inp.dataset.col === 'for') { forDay += v; forWeek += v; }
+        else if (inp.dataset.emp !== undefined && !inp.dataset.drive) {
+          empDay[parseInt(inp.dataset.emp)] += v;
+          weekTotals[parseInt(inp.dataset.emp)] += v;
+        }
+      });
+    }
+
+    // Flag daily OT (>8 hrs)
+    if (!isMob) {
+      for (let ei = 0; ei < EMPS; ei++) {
+        const regCell = document.getElementById('demp-reg-' + di + '-' + ei);
+        if (regCell) {
+          regCell.className = empDay[ei] > 8 ? 'ot-warning' : '';
+        }
+      }
+      const forCell = document.getElementById('dfor-reg-' + di);
+      if (forCell) forCell.className = forDay > 8 ? 'ot-warning' : '';
+    }
+  }
+
+  // Flag weekly OT (>40 hrs)
+  if (!isMob) {
+    for (let ei = 0; ei < EMPS; ei++) {
+      const weekCell = document.getElementById('dgemp-reg-' + ei);
+      if (weekCell) weekCell.style.background = weekTotals[ei] > 40 ? '#FF6B00' : '';
+      if (weekCell) weekCell.style.color = weekTotals[ei] > 40 ? '#fff' : '';
+      if (weekCell) weekCell.style.fontWeight = weekTotals[ei] > 40 ? '700' : '';
+    }
+  }
+}
+
+
+
+// ── LATE MODAL ───────────────────────────────────────────────────────
+function isLateSubmission() {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun,1=Mon,...
+  // Late = Tuesday(2) through Saturday(6), or Sunday(0) of NEXT week
+  return day !== 1; // only Monday is on time
+}
+
+function toggleLateSubmit() {
+  const cb  = document.getElementById('lateAck');
+  const btn = document.getElementById('lateSubmitBtn');
+  if (!cb || !btn) return;
+  btn.className = 'late-submit-btn' + (cb.checked ? ' enabled' : '');
+}
+
+function closeLateModal() {
+  document.getElementById('lateModal').classList.remove('show');
+  document.getElementById('lateAck').checked = false;
+  toggleLateSubmit();
+}
+
+function confirmLateSubmit() {
+  const cb = document.getElementById('lateAck');
+  if (!cb || !cb.checked) return;
+  closeLateModal();
+  doSubmit();
+}
+
+// ── MOBILE SWIPE TABS ────────────────────────────────────────────────
+function switchDay(di) {
+  document.querySelectorAll('.day-panel').forEach((p,i) => {
+    p.className = 'day-panel' + (i === di ? ' active' : '');
+  });
+  document.querySelectorAll('.day-tab').forEach((t,i) => {
+    t.className = 'day-tab' + (i === di ? ' active' : '') + (t.dataset.hasData === '1' ? ' has-data' : '');
+  });
+  // Scroll tab into view
+  const tab = document.querySelectorAll('.day-tab')[di];
+  if (tab) tab.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+}
+
+function markTabData(di) {
+  const tab = document.querySelectorAll('.day-tab')[di];
+  if (!tab) return;
+  // Check if any hours entered for this day
+  const hasHrs = Array.from(document.querySelectorAll('.m-hrs[data-mday="' + di + '"]'))
+    .some(inp => parseFloat(inp.value) > 0);
+  tab.dataset.hasData = hasHrs ? '1' : '0';
+  tab.className = 'day-tab' + (tab.classList.contains('active') ? ' active' : '') + (hasHrs ? ' has-data' : '');
+}
+
+// ── REQUIRED FIELD VALIDATION ─────────────────────────────────────────
+function validateForm() {
+  const errors = [];
+  const weField = document.getElementById('weekEnding');
+  const forField = document.getElementById('foreman');
+
+  // Clear previous errors
+  document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+
+  if (!weField.value) {
+    errors.push('⚠ Week Ending date is required.');
+    weField.parentElement.classList.add('field-error');
+  }
+  if (!forField.value.trim()) {
+    errors.push('⚠ Foreman name is required.');
+    forField.parentElement.classList.add('field-error');
+  }
+
+  const isMob = window.innerWidth <= 768;
+  let hasHours = false, highHours = false;
+  document.querySelectorAll(isMob ? '.m-hrs' : '.d-hrs').forEach(inp => {
+    const v = parseFloat(inp.value) || 0;
+    if (v > 0) hasHours = true;
+    if (v > 16) highHours = true;
+  });
+  if (!hasHours) errors.push('⚠ No hours have been entered yet.');
+  if (highHours) errors.push('⚠ One or more entries exceed 16 hours — please check for typos.');
+  return errors;
+}
+
 // ── BUILD DESKTOP ──────────────────────────────────────────────────
 function buildDesktop() {
   const tbody = document.getElementById('desktopBody');
@@ -547,8 +702,8 @@ function buildDesktop() {
     nameRow.appendChild(dayLabelCell);
     const filler = document.createElement('td');
     filler.className = 'job-filler'; filler.colSpan = 3;
-    filler.style.cssText = 'background:#1e1e1e;padding:3px 6px;';
-    filler.innerHTML = '<span style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.58rem;color:var(--yellow);letter-spacing:1px;text-transform:uppercase;font-weight:700;">\u25bc Employee Names for ' + day + '</span>';
+    filler.style.cssText = 'background:#3a3000;padding:3px 6px;border-right:1px solid #554400;';
+    filler.innerHTML = '<span style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.58rem;color:var(--yellow);letter-spacing:1px;text-transform:uppercase;font-weight:700;">Enter Names for ' + day + '</span>';
     nameRow.appendChild(filler);
     for (let ei = 0; ei < EMPS; ei++) {
       const nc = document.createElement('td');
@@ -613,17 +768,19 @@ function buildDesktop() {
   });
 
   const gr = document.createElement('tr'); gr.className = 'grand-row';
-  const gl = document.createElement('td'); gl.colSpan = 4; gl.className = 'grand-lbl';
+  const gl = document.createElement('td'); gl.colSpan = 3; gl.className = 'grand-lbl';
   gl.textContent = '\u26A1 WEEK \u2014 Reg Hrs'; gr.appendChild(gl);
+  const gs = document.createElement('td'); gs.id = 'dgfor-reg'; gs.textContent = '\u2014'; gs.style.cssText = 'background:var(--grand);text-align:center;font-weight:700;'; gr.appendChild(gs);
   for (let ei = 0; ei < EMPS; ei++) {
     const ge = document.createElement('td'); ge.id = 'dgemp-reg-' + ei; ge.textContent = '\u2014'; gr.appendChild(ge);
   }
   document.getElementById('desktopBody').appendChild(gr);
   const gr2 = document.createElement('tr'); gr2.className = 'grand-row';
   gr2.style.cssText = 'background:#FFFBEA;';
-  const gl2 = document.createElement('td'); gl2.colSpan = 4; gl2.className = 'grand-lbl';
+  const gl2 = document.createElement('td'); gl2.colSpan = 3; gl2.className = 'grand-lbl';
   gl2.style.cssText = 'background:#C8B000;font-style:italic;';
   gl2.textContent = '\u26A1 WEEK \u2014 Drive Time'; gr2.appendChild(gl2);
+  const gs2 = document.createElement('td'); gs2.id = 'dgfor-drv'; gs2.textContent = '\u2014'; gs2.style.cssText = 'background:#FFF3A0;text-align:center;font-weight:700;'; gr2.appendChild(gs2);
   for (let ei = 0; ei < EMPS; ei++) {
     const ge2 = document.createElement('td'); ge2.id = 'dgemp-drv-' + ei; ge2.textContent = '\u2014'; gr2.appendChild(ge2);
   }
@@ -633,7 +790,23 @@ function buildDesktop() {
 // ── BUILD MOBILE ───────────────────────────────────────────────────
 function buildMobile() {
   const wrap = document.getElementById('mobileView');
+  // Build day tabs
+  const tabsDiv = document.createElement('div');
+  tabsDiv.className = 'day-tabs';
   DAYS.forEach((day, di) => {
+    const tab = document.createElement('button');
+    tab.className = 'day-tab' + (di === 0 ? ' active' : '');
+    tab.textContent = day.substring(0,3).toUpperCase();
+    tab.dataset.hasData = '0';
+    tab.onclick = function() { switchDay(di); };
+    tabsDiv.appendChild(tab);
+  });
+  wrap.appendChild(tabsDiv);
+
+  DAYS.forEach((day, di) => {
+    const panel = document.createElement('div');
+    panel.className = 'day-panel' + (di === 0 ? ' active' : '');
+
     const card = document.createElement('div');
     card.className = 'day-card';
     let empGrid = '';
@@ -674,14 +847,18 @@ function buildMobile() {
     }
     card.innerHTML =
       '<div class="day-card-hdr">' + day + ' <span id="mday-tot-lbl-' + di + '"></span></div>' +
-      '<div class="day-emp-section"><span class="emp-section-lbl">\u25bc Employees working ' + day + '</span>' +
+      '<div class="day-emp-section"><span class="emp-section-lbl">Employees for ' + day + '</span>' +
       '<div class="day-emp-grid">' + empGrid + '</div></div>' +
       jobBlocks +
       '<div class="day-totals"><div class="tot-hdr">' + day + ' \u2014 Total Hours</div>' +
       '<div class="tot-grid">' + totCells + '</div></div>';
-    wrap.appendChild(card);
+    panel.appendChild(card);
+    wrap.appendChild(panel);
     card.querySelectorAll('.m-emp-name').forEach(inp => {
-      inp.addEventListener('input', () => updateMobileLabels(di));
+      inp.addEventListener('input', () => { updateMobileLabels(di); markTabData(di); });
+    });
+    card.querySelectorAll('.m-hrs').forEach(inp => {
+      inp.addEventListener('input', () => markTabData(di));
     });
   });
 
@@ -772,26 +949,36 @@ function calcTotals() {
       const ed=document.getElementById('mgemp-drv-'+ei); if(ed){const s=ed.querySelector('span');ed.textContent=fmt(geDrv[ei]);if(s)ed.appendChild(s);}
     }
   } else {
-    // dgfor-reg merged into label
-    // dgfor-drv merged into label
+    const dgr=document.getElementById('dgfor-reg'); if(dgr) dgr.textContent=fmt(gfReg);
+    const dgd=document.getElementById('dgfor-drv'); if(dgd) dgd.textContent=fmt(gfDrv);
     for(let ei=0;ei<EMPS;ei++){
       const er=document.getElementById('dgemp-reg-'+ei); if(er) er.textContent=fmt(geReg[ei]);
       const ed=document.getElementById('dgemp-drv-'+ei); if(ed) ed.textContent=fmt(geDrv[ei]);
     }
   }
+  checkOT();
 }
 
-// ── SUBMIT ─────────────────────────────────────────────────────────
+// ── SUBMIT ─────────────────────────────────────────────────────
 function submitTimesheet() {
   const errors = validateForm();
-  if (errors.length) { alert(errors.join('\n')); return; }
+  if (errors.length) { alert(errors.join(String.fromCharCode(10))); return; }
 
+  // Check if late submission
+  if (isLateSubmission()) {
+    document.getElementById('lateModal').classList.add('show');
+    return;
+  }
+  doSubmit();
+}
+
+function doSubmit() {
   const weekEnding = document.getElementById('weekEnding').value;
   const foreman    = document.getElementById('foreman').value;
   const notes      = document.getElementById('addlNotes').value;
   const isMob      = window.innerWidth <= 768;
 
-  let body = 'FALCON ELECTRIC INC. \u2014 TIMESHEET\n' + '='.repeat(52) + '\n\n';
+  let body = 'FALCON ELECTRIC INC. — CREW TIMESHEET\n' + '='.repeat(52) + '\n\n';
   body += 'Week Ending : ' + (weekEnding || 'N/A') + '\n';
   body += 'Foreman     : ' + (foreman    || 'N/A') + '\n';
   if (notes) body += 'Notes       : ' + notes + '\n';
@@ -802,8 +989,7 @@ function submitTimesheet() {
       const dn = document.querySelector('.d-emp-name[data-day="' + di + '"][data-col="' + ei + '"]');
       return (mn && mn.value.trim()) || (dn && dn.value.trim()) || 'Emp ' + (ei+1);
     });
-    let daySection = '\n--- ' + day.toUpperCase() + ' ---\n';
-    let hasDay = false;
+    let daySection = '\n--- ' + day.toUpperCase() + ' ---\n'; let hasDay = false;
     for (let ji = 0; ji < JOBS; ji++) {
       const g = function(col, emp, drive) {
         if (isMob) {
@@ -821,7 +1007,7 @@ function submitTimesheet() {
       for (let ei=0;ei<EMPS;ei++){eHrs.push(g(null,ei,false));eDrv.push(g(null,ei,true));}
       if (jName||jNum||fHrs||eHrs.some(function(v){return v;})) {
         hasDay = true;
-        daySection += '  Job ' + (ji+1) + ': ' + (jName||'\u2014') + ' (#' + (jNum||'\u2014') + ')\n';
+        daySection += '  Job ' + (ji+1) + ': ' + (jName||'—') + ' (#' + (jNum||'—') + ')\n';
         if (fHrs) daySection += '    Foreman      : ' + fHrs + ' hrs\n';
         eHrs.forEach(function(h,ei){ if(h) daySection += '    ' + empNames[ei].padEnd(12) + ': ' + h + ' hrs\n'; });
         if (fDrv||eDrv.some(function(v){return v;})) {
@@ -833,12 +1019,12 @@ function submitTimesheet() {
     }
     if (hasDay) {
       const ft = isMob ? document.getElementById('mfor-reg-'+di) : document.getElementById('dfor-reg-'+di);
-      const ftxt = ft ? ft.textContent.replace(/\n.*/,'') : '\u2014';
+      const ftxt = ft ? ft.textContent.replace(/\n.*/,'') : '—';
       daySection += '  Day Total: Foreman=' + ftxt;
       for (let ei=0;ei<EMPS;ei++) {
         const te = isMob ? document.getElementById('memp-reg-'+di+'-'+ei) : document.getElementById('demp-reg-'+di+'-'+ei);
-        const t = te ? te.textContent.replace(/\n.*/,'') : '\u2014';
-        if (t && t!=='\u2014') daySection += ', ' + empNames[ei] + '=' + t;
+        const t = te ? te.textContent.replace(/\n.*/,'') : '—';
+        if (t && t!=='—') daySection += ', ' + empNames[ei] + '=' + t;
       }
       body += daySection + '\n';
     }
@@ -846,18 +1032,19 @@ function submitTimesheet() {
 
   body += '\n' + '='.repeat(52) + '\nWEEK TOTALS\n';
   const gf = isMob ? document.getElementById('mgfor-reg') : document.getElementById('dgfor-reg');
-  body += 'Foreman     : ' + (gf ? gf.textContent.replace(/\n.*/,'') : '\u2014') + '\n';
+  body += 'Foreman     : ' + (gf ? gf.textContent.replace(/\n.*/,'') : '—') + '\n';
   for (let ei=0;ei<EMPS;ei++) {
     const te = isMob ? document.getElementById('mgemp-reg-'+ei) : document.getElementById('dgemp-reg-'+ei);
-    const t = te ? te.textContent.replace(/\n.*/,'') : '\u2014';
-    if (t && t!=='\u2014') body += 'Emp ' + (ei+1) + '        : ' + t + '\n';
+    const t = te ? te.textContent.replace(/\n.*/,'') : '—';
+    if (t && t!=='—') body += 'Emp ' + (ei+1) + '        : ' + t + '\n';
   }
 
-  const subject = encodeURIComponent('Falcon Electric Timesheet \u2014 Week Ending ' + (weekEnding||'N/A') + ' \u2014 ' + (foreman||'Crew'));
+  const subject = encodeURIComponent('Falcon Electric Timesheet — Week Ending ' + (weekEnding||'N/A') + ' — ' + (foreman||'Crew'));
   window.location.href = 'mailto:' + EMAILS + '?subject=' + subject + '&body=' + encodeURIComponent(body);
   showConfirm(body);
-  showToast('\u26A1 Email client opening...');
+  showToast('⚡ Email client opening...');
 }
+
 
 // ── INIT ───────────────────────────────────────────────────────────
 buildDesktop();
