@@ -195,12 +195,11 @@ tr.tot-row td {
 }
 tr.tot-row td.tot-lbl { background: var(--yellow); font-size: 0.68rem; letter-spacing: 0.5px; text-transform: uppercase; }
 tr.grand-row td {
-  background: var(--grand); font-family: 'Barlow Condensed', sans-serif;
+  font-family: 'Barlow Condensed', sans-serif;
   font-weight: 800; font-size: 0.82rem; text-align: center;
   padding: 6px 3px; border-top: 3px solid var(--black); color: var(--black);
 }
 tr.grand-row td.grand-lbl {
-  background: var(--black); color: var(--yellow);
   font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase;
 }
 
@@ -767,22 +766,30 @@ function buildDesktop() {
     tbody.appendChild(tr2);
   });
 
-  const gr = document.createElement('tr'); gr.className = 'grand-row';
+    const gr = document.createElement('tr'); gr.className = 'grand-row';
   const gl = document.createElement('td'); gl.colSpan = 3; gl.className = 'grand-lbl';
+  gl.style.cssText = 'background:#111;color:var(--yellow);font-family:Barlow Condensed,sans-serif;font-weight:800;font-size:0.82rem;letter-spacing:1px;text-transform:uppercase;padding:6px 10px;';
   gl.textContent = '\u26A1 WEEK \u2014 Reg Hrs'; gr.appendChild(gl);
-  const gs = document.createElement('td'); gs.id = 'dgfor-reg'; gs.textContent = '\u2014'; gs.style.cssText = 'background:var(--grand);text-align:center;font-weight:700;'; gr.appendChild(gs);
+  const gs = document.createElement('td'); gs.id = 'dgfor-reg';
+  gs.style.cssText = 'background:var(--grand);text-align:center;font-weight:800;font-size:0.85rem;padding:6px 3px;border:1px solid #ddd;';
+  gs.textContent = '\u2014'; gr.appendChild(gs);
   for (let ei = 0; ei < EMPS; ei++) {
-    const ge = document.createElement('td'); ge.id = 'dgemp-reg-' + ei; ge.textContent = '\u2014'; gr.appendChild(ge);
+    const ge = document.createElement('td'); ge.id = 'dgemp-reg-' + ei;
+    ge.style.cssText = 'background:var(--grand);text-align:center;font-weight:800;font-size:0.85rem;padding:6px 3px;border:1px solid #ddd;';
+    ge.textContent = '\u2014'; gr.appendChild(ge);
   }
   document.getElementById('desktopBody').appendChild(gr);
-  const gr2 = document.createElement('tr'); gr2.className = 'grand-row';
-  gr2.style.cssText = 'background:#FFFBEA;';
+    const gr2 = document.createElement('tr'); gr2.className = 'grand-row';
   const gl2 = document.createElement('td'); gl2.colSpan = 3; gl2.className = 'grand-lbl';
-  gl2.style.cssText = 'background:#C8B000;font-style:italic;';
+  gl2.style.cssText = 'background:#3a3000;color:#FFE566;font-family:Barlow Condensed,sans-serif;font-weight:800;font-style:italic;font-size:0.82rem;letter-spacing:1px;text-transform:uppercase;padding:6px 10px;';
   gl2.textContent = '\u26A1 WEEK \u2014 Drive Time'; gr2.appendChild(gl2);
-  const gs2 = document.createElement('td'); gs2.id = 'dgfor-drv'; gs2.textContent = '\u2014'; gs2.style.cssText = 'background:#FFF3A0;text-align:center;font-weight:700;'; gr2.appendChild(gs2);
+  const gs2 = document.createElement('td'); gs2.id = 'dgfor-drv';
+  gs2.style.cssText = 'background:#FFF3CC;text-align:center;font-weight:800;font-size:0.85rem;padding:6px 3px;border:1px solid #ddd;color:#333;';
+  gs2.textContent = '\u2014'; gr2.appendChild(gs2);
   for (let ei = 0; ei < EMPS; ei++) {
-    const ge2 = document.createElement('td'); ge2.id = 'dgemp-drv-' + ei; ge2.textContent = '\u2014'; gr2.appendChild(ge2);
+    const ge2 = document.createElement('td'); ge2.id = 'dgemp-drv-' + ei;
+    ge2.style.cssText = 'background:#FFF3CC;text-align:center;font-weight:800;font-size:0.85rem;padding:6px 3px;border:1px solid #ddd;color:#333;';
+    ge2.textContent = '\u2014'; gr2.appendChild(ge2);
   }
   document.getElementById('desktopBody').appendChild(gr2);
 }
