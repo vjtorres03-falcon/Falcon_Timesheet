@@ -489,7 +489,9 @@ function updateMobileLabels(di) {
       el.textContent = name + ' Drive';
     });
     const totLbl = document.getElementById('mtot-emp-lbl-'+di+'-'+ei);
-    if(totLbl) totLbl.textContent = name;
+    if(totLbl) totLbl.textContent = name + ' Reg';
+    const totDrvLbl = document.getElementById('mtot-emp-drv-lbl-'+di+'-'+ei);
+    if(totDrvLbl) totDrvLbl.textContent = name + ' Drive';
   }
 }
 
@@ -639,7 +641,7 @@ function buildMobile() {
     for (let ei = 0; ei < EMPS; ei++) {
       totGrid += '<div class="tot-item"><label id="mtot-emp-lbl-' + di + '-' + ei + '">Emp ' + (ei+1) + ' Reg</label>' +
         '<span id="memp-reg-' + di + '-' + ei + '">—</span></div>' +
-        '<div class="tot-item"><label>Emp ' + (ei+1) + ' Drive</label>' +
+        '<div class="tot-item"><label id="mtot-emp-drv-lbl-' + di + '-' + ei + '">Emp ' + (ei+1) + ' Drive</label>' +
         '<span id="memp-drv-' + di + '-' + ei + '">—</span></div>';
     }
 
