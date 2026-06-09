@@ -341,7 +341,7 @@ function getNextSunday() {
 }
 
 const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-const JOBS = 6;
+const JOBS = 4;
 const EMPS = 6;
 const EMAILS = "projectmanager@falconelectricinc.com,berit@falconelectricinc.com,projectassistant@falconelectricinc.com,bonnie@falconelectricinc.com";
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxmLM2_rTVzXoh0Re_WkQwFWU2A0-Kv_gOPO9SGJaWnum39lgk8X4zL6JcSFnl8L3D6bQ/exec";
@@ -590,6 +590,7 @@ function buildMobile() {
         '<input type="text" placeholder="Name..." class="m-emp-name" data-mday="' + di + '" data-col="' + ei + '"></div>';
     }
 
+    const jobColors = ['#ffffff','#EEF3FF','#F5F5F5','#FFF9E6'];
     let jobBlocks = '';
     for (let ji = 0; ji < JOBS; ji++) {
       let empHrsHtml = '';
@@ -604,8 +605,8 @@ function buildMobile() {
           '<label data-mdlabel-day="' + di + '" data-mdlabel-emp="' + ei + '">Emp ' + (ei+1) + ' Drive</label>' +
           '<input type="number" min="0" max="24" step="0.25" placeholder="0" class="m-hrs" data-mday="' + di + '" data-mjob="' + ji + '" data-memp="' + ei + '" data-mdrive="1" oninput="calcTotals()"></div>';
       }
-      jobBlocks += '<div class="job-card">' +
-        '<div class="job-card-hdr">Job ' + (ji+1) + '</div>' +
+      const isFirst = ji === 0;
+      const jobContent = '<div class="job-card-body" id="job-body-' + di + '-' + ji + '" style="display:' + (isFirst ? 'block' : 'none') + ';background:' + jobColors[ji] + ';">' +
         '<div class="job-fields">' +
           '<div class="job-field" style="grid-column:1/-1"><label>Job Name / Description</label>' +
           '<input type="text" placeholder="Job name..." data-mday="' + di + '" data-mjob="' + ji + '" data-mcol="jobname"></div>' +
@@ -623,6 +624,13 @@ function buildMobile() {
             empDrvHtml +
           '</div>' +
         '</div>' +
+      '</div>';
+      jobBlocks += '<div class="job-card">' +
+        '<div class="job-card-hdr" onclick="toggleJob(' + di + ',' + ji + ')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:' + (isFirst ? '#1a2a4a' : '#2a2a2a') + ';">' +
+          '<span style="color:' + (isFirst ? '#7aabff' : '#F5C400') + ';font-size:0.85rem;">JOB ' + (ji+1) + (isFirst ? ' — tap to collapse' : ' — tap to expand') + '</span>' +
+          '<span id="job-icon-' + di + '-' + ji + '" style="color:#F5C400;font-size:1.1rem;">' + (isFirst ? '▲' : '＋') + '</span>' +
+        '</div>' +
+        jobContent +
       '</div>';
     }
 
@@ -653,6 +661,21 @@ function buildMobile() {
 }
 
 
+
+// ── JOB ACCORDION ────────────────────────────────────────────────────
+function toggleJob(di, ji) {
+  const body = document.getElementById('job-body-' + di + '-' + ji);
+  const icon = document.getElementById('job-icon-' + di + '-' + ji);
+  const hdr  = body ? body.previousElementSibling : null;
+  if (!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (icon) icon.textContent = isOpen ? '＋' : '▲';
+  if (hdr) {
+    const lbl = hdr.querySelector('span');
+    if (lbl) lbl.textContent = 'JOB ' + (ji+1) + (isOpen ? ' — tap to expand' : ' — tap to collapse');
+  }
+}
 // ── LATE MODAL ───────────────────────────────────────────────────────
 function isLateSubmission() {
   const weVal = document.getElementById('weekEnding').value;
