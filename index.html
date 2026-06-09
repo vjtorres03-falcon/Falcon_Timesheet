@@ -629,8 +629,10 @@ function buildMobile() {
     let totGrid = '<div class="tot-item"><label>Foreman Reg</label><span id="mfor-reg-' + di + '">—</span></div>' +
       '<div class="tot-item"><label>Foreman Drive</label><span id="mfor-drv-' + di + '">—</span></div>';
     for (let ei = 0; ei < EMPS; ei++) {
-      totGrid += '<div class="tot-item"><label id="mtot-emp-lbl-' + di + '-' + ei + '">Emp ' + (ei+1) + '</label>' +
-        '<span id="memp-reg-' + di + '-' + ei + '">—</span></div>';
+      totGrid += '<div class="tot-item"><label id="mtot-emp-lbl-' + di + '-' + ei + '">Emp ' + (ei+1) + ' Reg</label>' +
+        '<span id="memp-reg-' + di + '-' + ei + '">—</span></div>' +
+        '<div class="tot-item"><label>Emp ' + (ei+1) + ' Drive</label>' +
+        '<span id="memp-drv-' + di + '-' + ei + '">—</span></div>';
     }
 
     panel.innerHTML = '<div class="day-card">' +
