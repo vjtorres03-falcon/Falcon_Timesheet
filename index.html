@@ -204,7 +204,7 @@ tr.grand-row td.grand-lbl {
 }
 
 /* ── MOBILE ── */
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   .desktop-view { display: none; }
   .mobile-view  { display: block; background: #1a1a1a; padding: 10px; }
   .info { grid-template-columns: 1fr 1fr; }
@@ -521,7 +521,7 @@ function validateForm() {
   const errors = [];
   if (!document.getElementById('weekEnding').value) errors.push('\u26A0 Week Ending date is required.');
   if (!document.getElementById('foreman').value.trim()) errors.push('\u26A0 Foreman name is required.');
-  const isMob = window.innerWidth <= 1024;
+  const isMob = window.innerWidth <= 768;
   let hasHours = false, highHours = false;
   document.querySelectorAll(isMob ? '.m-hrs' : '.d-hrs').forEach(inp => {
     const v = parseFloat(inp.value) || 0;
@@ -553,7 +553,7 @@ function updateCharCounter() {
 
 // ── OT FLAG ─────────────────────────────────────────────────────────
 function checkOT() {
-  const isMob = window.innerWidth <= 1024;
+  const isMob = window.innerWidth <= 768;
   const weekTotals = Array(EMPS).fill(0);
   let forWeek = 0;
 
@@ -638,8 +638,15 @@ function confirmLateSubmit() {
 // ── MOBILE SWIPE TABS ────────────────────────────────────────────────
 function switchDay(di) {
   document.querySelectorAll('.day-panel').forEach((p,i) => {
-    p.className = 'day-panel' + (i === di ? ' active' : '');
+    p.classList.toggle('active', i === di);
   });
+  document.querySelectorAll('.day-tab').forEach((t,i) => {
+    t.classList.toggle('active', i === di);
+  });
+  const tab = document.querySelectorAll('.day-tab')[di];
+  if (tab) tab.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+}
+function switchDay_old(di) {
   document.querySelectorAll('.day-tab').forEach((t,i) => {
     t.className = 'day-tab' + (i === di ? ' active' : '') + (t.dataset.hasData === '1' ? ' has-data' : '');
   });
@@ -676,7 +683,7 @@ function validateForm() {
     forField.parentElement.classList.add('field-error');
   }
 
-  const isMob = window.innerWidth <= 1024;
+  const isMob = window.innerWidth <= 768;
   let hasHours = false, highHours = false;
   document.querySelectorAll(isMob ? '.m-hrs' : '.d-hrs').forEach(inp => {
     const v = parseFloat(inp.value) || 0;
@@ -900,7 +907,7 @@ function updateMobileLabels(di) {
 // ── TOTALS ─────────────────────────────────────────────────────
 function calcTotals() {
   const fmt = n => n > 0 ? (n === Math.round(n) ? String(n) : n.toFixed(2)) : '—';
-  const isMob = window.innerWidth <= 1024;
+  const isMob = window.innerWidth <= 768;
   for (let di = 0; di < DAYS.length; di++) {
     let forReg=0, forDrv=0;
     const empReg=Array(EMPS).fill(0), empDrv=Array(EMPS).fill(0);
@@ -983,7 +990,7 @@ function doSubmit() {
   const weekEnding = document.getElementById('weekEnding').value;
   const foreman    = document.getElementById('foreman').value;
   const notes      = document.getElementById('addlNotes').value;
-  const isMob      = window.innerWidth <= 1024;
+  const isMob      = window.innerWidth <= 768;
 
   let body = 'FALCON ELECTRIC INC. — CREW TIMESHEET\n' + '='.repeat(52) + '\n\n';
   body += 'Week Ending : ' + (weekEnding || 'N/A') + '\n';
