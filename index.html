@@ -275,6 +275,10 @@ tr.drv.daysep td { border-bottom: 3px solid var(--black); }
   font-size: 13px;
 }
 
+/* datalist inputs get a subtle dropdown caret hint */
+input[list] { cursor: text; }
+input[list]::-webkit-calendar-picker-indicator { opacity: 0.4; cursor: pointer; }
+
 /* ── PTO DAY ── */
 .pto-toggle-row {
   display: flex; align-items: center; gap: 8px;
@@ -616,8 +620,9 @@ function updateAllMobileLabels() {
 
 // ── EMPLOYEE DROPDOWNS ───────────────────────────────────────────────
 let EMPLOYEE_LIST = [];
-
 let FOREMAN_LIST = [];
+// JOB_LIST: array of { name, num } objects loaded from the Jobs tab
+let JOB_LIST = [];
 
 function loadEmployees() {
   fetch(APPS_SCRIPT_URL + '?action=employees')
@@ -625,12 +630,62 @@ function loadEmployees() {
     .then(function(data){
       if (data.status === 'success') {
         if (data.employees) { EMPLOYEE_LIST = data.employees; }
-        if (data.foremen) { FOREMAN_LIST = data.foremen; }
+        if (data.foremen)   { FOREMAN_LIST = data.foremen; }
         populateAllDropdowns();
         populateForemanDropdown();
       }
     })
     .catch(function(){ EMPLOYEE_LIST = []; FOREMAN_LIST = []; });
+
+  // Fetch job list from Jobs tab independently
+  fetch(APPS_SCRIPT_URL + '?action=jobs')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data.status === 'success' && data.jobs) {
+        JOB_LIST = data.jobs; // [{name, num}, ...]
+        populateJobDatalist();
+      }
+    })
+    .catch(function(){ JOB_LIST = []; });
+}
+
+// Build/refresh the shared datalist used by all job name inputs
+function populateJobDatalist() {
+  let dl = document.getElementById('job-name-datalist');
+  if (!dl) {
+    dl = document.createElement('datalist');
+    dl.id = 'job-name-datalist';
+    document.body.appendChild(dl);
+  }
+  dl.innerHTML = '';
+  JOB_LIST.forEach(function(j) {
+    const opt = document.createElement('option');
+    opt.value = j.name;
+    opt.setAttribute('data-jobnum', j.num);
+    dl.appendChild(opt);
+  });
+}
+
+// Called oninput on any job name field — autofills the paired job # field
+function onJobNameInput(nameInput) {
+  const val = nameInput.value.trim();
+  const match = JOB_LIST.find(function(j){ return j.name.toLowerCase() === val.toLowerCase(); });
+  if (!match) return;
+
+  // Determine whether this is desktop or mobile by which data attrs are present
+  const di  = nameInput.dataset.day  !== undefined ? nameInput.dataset.day  : nameInput.dataset.mday;
+  const ji  = nameInput.dataset.job  !== undefined ? nameInput.dataset.job  : nameInput.dataset.mjob;
+  const isM = nameInput.dataset.mday !== undefined;
+
+  let numInput;
+  if (isM) {
+    numInput = document.querySelector('input[data-mday="'+di+'"][data-mjob="'+ji+'"][data-mcol="jobnum"]');
+  } else {
+    numInput = document.querySelector('input[data-day="'+di+'"][data-job="'+ji+'"][data-col="jobnum"]');
+  }
+  if (numInput && !numInput.value) {
+    numInput.value = match.num;
+  }
 }
 
 function populateForemanDropdown() {
@@ -719,7 +774,7 @@ function buildDesktop() {
       const jr = document.createElement('tr');
       jr.className = 'jr' + (ji%2) + (ji===JOBS-1?' daysep':'');
       const jnc = document.createElement('td'); jnc.className = 'jname';
-      jnc.innerHTML = '<input type="text" placeholder="Job name..." data-day="' + di + '" data-job="' + ji + '" data-col="jobname">' +
+      jnc.innerHTML = '<input type="text" placeholder="Job name..." list="job-name-datalist" data-day="' + di + '" data-job="' + ji + '" data-col="jobname" oninput="onJobNameInput(this)">' +
         '<label style="display:flex;align-items:center;gap:4px;margin-top:3px;cursor:pointer;">' +
         '<input type="checkbox" id="d-night-cb-' + di + '-' + ji + '" onchange="toggleDesktopNight(' + di + ',' + ji + ')" style="width:13px;height:13px;accent-color:#3a6abf;cursor:pointer;">' +
         '<span style="font-size:0.6rem;color:#3a6abf;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;letter-spacing:0.5px;">🌙 Night Job</span>' +
@@ -811,7 +866,7 @@ function buildMobile() {
         '</div>' +
         '<div class="job-fields">' +
           '<div class="job-field" style="grid-column:1/-1"><label>Job Name / Description</label>' +
-          '<input type="text" placeholder="Job name..." data-mday="' + di + '" data-mjob="' + ji + '" data-mcol="jobname"></div>' +
+          '<input type="text" placeholder="Job name..." list="job-name-datalist" data-mday="' + di + '" data-mjob="' + ji + '" data-mcol="jobname" oninput="onJobNameInput(this)"></div>' +
           '<div class="job-field"><label>Job #</label>' +
           '<input type="text" placeholder="#" data-mday="' + di + '" data-mjob="' + ji + '" data-mcol="jobnum"></div>' +
           '<div class="job-field"><label>Foreman Hrs</label>' +
