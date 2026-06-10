@@ -296,13 +296,13 @@ body { background: #141414; font-family: 'Barlow', sans-serif; font-size: 14px; 
       <table>
         <thead><tr>
           <th>Status</th>
-          <th>Foreman</th>
+          <th>Person</th>
           <th>Week Ending</th>
           <th>Day</th>
           <th>Job Name</th>
           <th>Job #</th>
           <th>Type</th>
-          <th>Foreman Hrs</th>
+          <th>Hrs</th>
           <th>Submitted</th>
           <th>Notes</th>
         </tr></thead>
@@ -352,7 +352,7 @@ function populateWeekSelect() {
   sel.innerHTML = '<option value="">All weeks</option>';
   weeks.forEach(w => {
     const opt = document.createElement('option');
-    opt.value = w; opt.textContent = 'Week ending ' + w;
+    opt.value = w; opt.textContent = 'Week ending ' + fmtDate(w);
     sel.appendChild(opt);
   });
   // Default to most recent week
@@ -451,7 +451,7 @@ function renderTracker() {
         <div class="foreman-info">
           <div class="foreman-name">${esc(f.name)}</div>
           <div class="foreman-status missing">Not submitted</div>
-          <div class="foreman-time">${week ? 'Week ending ' + week : ''}</div>
+          <div class="foreman-time">${week ? 'Week ending ' + fmtDate(week) : ''}</div>
         </div>
       </div>`;
     }
@@ -541,9 +541,45 @@ function renderSubmissionsTable() {
   const q     = document.getElementById('subSearch').value.toLowerCase();
   const tbody = document.getElementById('subTableBody');
 
-  const filtered = q ? rows.filter(r =>
-    [r.foreman, r.jobName, r.jobNum, r.day, r.notes].some(v => v && v.toLowerCase().includes(q))
-  ) : rows;
+  // Expand each sheet row into one row per person
+  const expanded = [];
+  rows.forEach(r => {
+    const base = {
+      status:      r.status,
+      foreman:     r.foreman,
+      weekEnding:  r.weekEnding,
+      day:         r.day,
+      dayType:     r.dayType,
+      jobType:     r.jobType,
+      jobName:     r.jobName,
+      jobNum:      r.jobNum,
+      submittedAt: r.submittedAt,
+      notes:       r.notes
+    };
+
+    if (r.dayType === 'PTO') {
+      expanded.push({...base, person: r.foreman, role: 'Foreman', hrs: '', drive: ''});
+      return;
+    }
+
+    // Foreman row
+    if (r.foreman || r.foremanHrs) {
+      expanded.push({...base, person: r.foreman, role: 'Foreman', hrs: r.foremanHrs, drive: r.foremanDrive});
+    }
+    // Employee rows
+    for (let i = 1; i <= 6; i++) {
+      const name = r['emp'+i+'Name'];
+      const hrs  = r['emp'+i+'Hrs'];
+      const drv  = r['emp'+i+'Drive'];
+      if (name || hrs) {
+        expanded.push({...base, person: name, role: 'Crew', hrs, drive: drv});
+      }
+    }
+  });
+
+  const filtered = q ? expanded.filter(r =>
+    [r.person, r.foreman, r.jobName, r.jobNum, r.day, r.notes].some(v => v && v.toLowerCase().includes(q))
+  ) : expanded;
 
   if (!filtered.length) {
     tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No submissions found.</td></tr>';
@@ -557,16 +593,19 @@ function renderSubmissionsTable() {
       : 'pending';
     const nightBadge = r.jobType === 'Night Job' ? '<span class="night-badge">🌙 NIGHT</span>' : '';
     const ptoBadge   = r.dayType === 'PTO'       ? '<span class="pto-badge">🏖 PTO</span>'    : '';
+    const roleBadge  = r.role === 'Foreman'
+      ? '<span style="font-size:0.55rem;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;letter-spacing:1px;color:var(--yellow);text-transform:uppercase;">Foreman</span>'
+      : '<span style="font-size:0.55rem;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;letter-spacing:1px;color:#888;text-transform:uppercase;">Crew</span>';
     return `<tr>
       <td><span class="status-pill ${statusClass}">${esc(r.status||'⏳ Pending')}</span></td>
-      <td>${esc(r.foreman)}</td>
-      <td style="white-space:nowrap;">${esc(r.weekEnding)}</td>
+      <td>${esc(r.person||'—')} ${roleBadge}</td>
+      <td style="white-space:nowrap;">${fmtDate(r.weekEnding)}</td>
       <td>${esc(r.day)}</td>
       <td>${ptoBadge || esc(r.jobName||'—')}</td>
       <td><span class="job-num-badge">${esc(r.jobNum||'—')}</span></td>
       <td>${nightBadge || '—'}</td>
-      <td class="num-cell">${r.foremanHrs||'—'}</td>
-      <td style="white-space:nowrap;font-size:0.72rem;color:var(--muted);">${esc((r.submittedAt||'').toString().substring(0,16))}</td>
+      <td class="num-cell">${r.hrs||'—'}</td>
+      <td style="white-space:nowrap;font-size:0.72rem;color:var(--muted);">${fmtDate(r.submittedAt)}</td>
       <td class="notes-cell" title="${esc(r.notes)}">${esc(r.notes)||'—'}</td>
     </tr>`;
   }).join('');
@@ -577,6 +616,18 @@ function fmt(v) { return v > 0 ? (v % 1 === 0 ? v : v.toFixed(1)) : '—'; }
 function esc(s) {
   if (s == null) return '';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+// Clean up dates that come back as ISO strings or Date objects from Sheets
+function fmtDate(val) {
+  if (!val) return '—';
+  const s = String(val);
+  // Already a clean date like 2026-06-14
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // ISO timestamp — extract date part and format as M/D/YYYY
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return m[2].replace(/^0/,'') + '/' + m[3].replace(/^0/,'') + '/' + m[1];
+  // Already formatted string from Apps Script (e.g. "6/10/2026, 10:58:00 AM")
+  return s.length > 20 ? s.substring(0, 16) : s;
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────
