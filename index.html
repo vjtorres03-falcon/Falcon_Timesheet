@@ -1177,7 +1177,9 @@ function toggleJob(di, ji) {
 function toggleDesktopPTO(di) {
   const cb = document.getElementById('d-pto-cb-' + di);
   if (!cb) return;
-  // Gray out all inputs for this day
+  // Sync mobile checkbox
+  const mobCb = document.getElementById('pto-cb-' + di);
+  if (mobCb) mobCb.checked = cb.checked;
   document.querySelectorAll('.d-hrs[data-day="' + di + '"], input[data-day="' + di + '"]').forEach(function(inp) {
     inp.disabled = cb.checked;
     inp.style.opacity = cb.checked ? '0.3' : '1';
@@ -1194,6 +1196,9 @@ function togglePTO(di) {
   const card = document.getElementById('day-card-' + di);
   const cb = document.getElementById('pto-cb-' + di);
   if (!card || !cb) return;
+  // Sync desktop checkbox
+  const deskCb = document.getElementById('d-pto-cb-' + di);
+  if (deskCb) deskCb.checked = cb.checked;
   card.classList.toggle('pto-day', cb.checked);
 }
 
@@ -1276,9 +1281,10 @@ function doSubmit() {
 
     let daySection = '--- ' + day.toUpperCase() + ' ---\n'; let hasDay = false;
 
-    // Check PTO for this day
-    const ptoCbCheck = document.getElementById('pto-cb-' + di) || document.getElementById('d-pto-cb-' + di);
-    const isDayPTO = ptoCbCheck && ptoCbCheck.checked;
+    // Check PTO — check both checkboxes since both DOM views exist simultaneously
+    const ptoCbMob  = document.getElementById('pto-cb-' + di);
+    const ptoCbDesk = document.getElementById('d-pto-cb-' + di);
+    const isDayPTO  = (ptoCbMob && ptoCbMob.checked) || (ptoCbDesk && ptoCbDesk.checked);
     if (isDayPTO) {
       hasDay = true;
       daySection += '  PTO Day\n';
@@ -1315,9 +1321,10 @@ function doSubmit() {
         if(fHrs) daySection += '    Foreman: '+fHrs+' hrs\n';
         eHrs.forEach((h,ei)=>{ if(h) daySection += '    '+(empNames[ei]||'Emp '+(ei+1))+': '+h+' hrs\n'; });
 
-        const ptoCb = document.getElementById('pto-cb-' + di) || document.getElementById('d-pto-cb-' + di);
+        const ptoCb  = document.getElementById('pto-cb-' + di);
+        const ptoCbD = document.getElementById('d-pto-cb-' + di);
+        const isPTO  = (ptoCb && ptoCb.checked) || (ptoCbD && ptoCbD.checked);
         const nightCb = document.getElementById('night-cb-' + di + '-' + ji) || document.getElementById('d-night-cb-' + di + '-' + ji);
-        const isPTO = ptoCb && ptoCb.checked;
         const isNight = nightCb && nightCb.checked;
         const row = { day, jobName:jName, jobNum:jNum, foremanHrs:fHrs, foremanDrive:fDrv,
           dayType: isPTO ? 'PTO' : 'Regular',
@@ -1348,8 +1355,9 @@ function doSubmit() {
   console.log('sheetRows count:', sheetRows.length);
   console.log('weekEnding:', weekEnding, 'foreman:', foreman);
   DAYS.forEach(function(day, di) {
-    const ptoCb2 = document.getElementById('pto-cb-' + di) || document.getElementById('d-pto-cb-' + di);
-    console.log(day, 'PTO checkbox found:', !!ptoCb2, 'checked:', ptoCb2 && ptoCb2.checked);
+    const m = document.getElementById('pto-cb-' + di);
+    const d = document.getElementById('d-pto-cb-' + di);
+    console.log(day, 'mobile PTO:', m&&m.checked, 'desktop PTO:', d&&d.checked);
   });
   const payload = { weekEnding, foreman, foremanEmail, rows: sheetRows, summary: body };
 
@@ -1409,8 +1417,9 @@ function generatePDF() {
       return (mn&&mn.value.trim())||(dn&&dn.value.trim())||'';
     });
 
-    const ptoCbPdf = document.getElementById('pto-cb-'+di)||document.getElementById('d-pto-cb-'+di);
-    const isPtoPdf = ptoCbPdf && ptoCbPdf.checked;
+    const ptoCbPdfM = document.getElementById('pto-cb-'+di);
+    const ptoCbPdfD = document.getElementById('d-pto-cb-'+di);
+    const isPtoPdf  = (ptoCbPdfM && ptoCbPdfM.checked) || (ptoCbPdfD && ptoCbPdfD.checked);
 
     const dayJobs=[];
     for(let ji=0;ji<JOBS;ji++){
