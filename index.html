@@ -225,16 +225,23 @@ tr.drv.daysep td { border-bottom: 3px solid var(--black); }
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 12px 0 10px;
-    gap: 6px;
+    padding: 8px 14px 6px;
+    gap: 4px;
   }
-  .hdr-logo img { width: 78px; height: auto; }
+  .hdr-logo img { width: 88px; height: auto; max-width: none; }
   .hdr-mid { text-align: center; width: 100%; }
-  .hdr-mid h1 { font-size: 1.1rem; letter-spacing: 3px; }
-  .hdr-mid small { font-size: 0.52rem; max-width: 90%; margin: 2px auto 0; line-height: 1.3; display: block; }
-  .hdr-right { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .hdr-mid h1 { font-size: 1.25rem; letter-spacing: 3px; }
+  .hdr-mid small { font-size: 0.52rem; max-width: 90%; margin: 1px auto 0; line-height: 1.3; display: block; }
+  .hdr-right { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .header-actions { padding: 0 12px; gap: 8px; }
+  .header-actions button {
+    height: 42px;
+    font-size: 0.65rem;
+    letter-spacing: 0.5px;
+    border-radius: 8px;
+  }
   .btn-print { display: none !important; }
-  .save-indicator { text-align: center; font-size: 0.48rem; width: 100%; padding: 0 16px; }
+  .save-indicator { text-align: center; font-size: 0.48rem; width: 100%; padding: 0 12px; }
 }
 
 @media (min-width: 901px) and (max-width: 1024px) {
@@ -267,6 +274,62 @@ tr.drv.daysep td { border-bottom: 3px solid var(--black); }
   white-space: nowrap;
   font-size: 13px;
 }
+
+/* ── PTO DAY ── */
+.pto-toggle-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 12px; background: #1a1a1a; border-bottom: 1px solid #333;
+}
+.pto-toggle-row label {
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+  font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase;
+  color: #aaa; cursor: pointer;
+}
+.pto-toggle-row input[type=checkbox] { width: 16px; height: 16px; accent-color: #F5C400; cursor: pointer; }
+.day-card.pto-day .day-emp-section { opacity: 0.3; pointer-events: none; }
+.day-card.pto-day .job-card { opacity: 0.3; pointer-events: none; }
+.pto-banner {
+  display: none; background: #F5C400; color: #111;
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+  font-size: 0.9rem; letter-spacing: 2px; text-transform: uppercase;
+  text-align: center; padding: 10px; margin: 8px;
+  border-radius: 6px;
+}
+.day-card.pto-day .pto-banner { display: block; }
+
+/* ── NIGHT JOB ── */
+.night-toggle-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 10px; background: #f0f0f0; border-bottom: 1px solid #ddd;
+}
+.night-toggle-row label {
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+  font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase;
+  color: #555; cursor: pointer;
+}
+.night-toggle-row input[type=checkbox] { width: 14px; height: 14px; accent-color: #1a3a6e; cursor: pointer; }
+.job-card.night-job { border-left: 4px solid #1a3a6e; }
+.job-card.night-job .job-card-hdr { background: #1a3a6e !important; }
+.job-card.night-job .job-card-hdr span { color: #7aabff !important; }
+
+/* ── EMPLOYEE DROPDOWN ── */
+.emp-select {
+  width: 100%; background: transparent; border: none;
+  border-bottom: 1.5px solid var(--yellow); color: #FFE566;
+  font-family: 'Barlow', sans-serif; font-size: 0.85rem;
+  padding: 2px 0; outline: none; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+}
+.emp-select option { color: #111; background: #fff; }
+.emp-select:invalid { color: #998833; }
+/* Desktop employee dropdown */
+.d-emp-select {
+  width: 100%; background: transparent; border: none;
+  border-bottom: 1px solid #ddd; font-size: 0.8rem;
+  padding: 2px; outline: none; cursor: pointer;
+  color: #333;
+}
+.d-emp-select option { color: #111; }
 </style>
 </head>
 <body>
@@ -322,6 +385,7 @@ tr.drv.daysep td { border-bottom: 3px solid var(--black); }
       <button class="btn-save" onclick="saveProgress()">SAVE</button>
       <button class="btn-clear" onclick="clearForm()">NEW WEEK</button>
     </div>
+    <button class="btn-print" onclick="window.print()" style="display:none;">PRINT</button>
     <div class="save-indicator" id="saveIndicator"></div>
   </div>
 </div>
@@ -358,13 +422,12 @@ tr.drv.daysep td { border-bottom: 3px solid var(--black); }
       <tbody id="desktopBody"></tbody>
     </table>
   </div>
-</div>
+  <div style="padding:4px 10px 6px;background:#fff;border-top:1px solid #eee;font-family:'Barlow',sans-serif;font-size:0.65rem;color:#888;">🟠 <strong style="color:#FF6B00;">Orange cells</strong> = OT detected (over 8 hrs/day)</div>
 </div>
 
 <!-- MOBILE -->
 <div class="mobile-view" id="mobileView"></div>
 
-<div style="padding:4px 10px 6px;background:#fff;border-top:1px solid #eee;font-family:'Barlow',sans-serif;font-size:0.65rem;color:#888;">🟠 <strong style="color:#FF6B00;">Orange cells</strong> = OT detected (over 8 hrs/day)</div>
 <script>
 
 // ── WEEK ENDING ─────────────────────────────────────────────────────
@@ -415,7 +478,7 @@ function saveProgress() {
     foremanEmail: document.getElementById('foremanEmail') ? document.getElementById('foremanEmail').value : '',
     inputs: {}
   };
-  document.querySelectorAll('input[data-day], input[data-mday]').forEach(inp => {
+  document.querySelectorAll('input[data-day], input[data-mday], select[data-day], select[data-mday]').forEach(inp => {
     if (inp.id) data.inputs[inp.id] = inp.value;
     else {
       const key = JSON.stringify(inp.dataset);
@@ -438,7 +501,7 @@ function loadSaved() {
     if (feEl && data.foremanEmail) feEl.value = data.foremanEmail;
     if (data.inputs) {
       Object.entries(data.inputs).forEach(([key, val]) => {
-        let el = document.getElementById(key);
+        let el = document.getElementById(key) || document.querySelector('select#' + key);
         if (!el) {
           try {
             const ds = JSON.parse(key);
@@ -539,6 +602,68 @@ function updateAllMobileLabels() {
   DAYS.forEach((_, di) => updateMobileLabels(di));
 }
 
+
+// ── EMPLOYEE DROPDOWNS ───────────────────────────────────────────────
+let EMPLOYEE_LIST = [];
+
+let FOREMAN_LIST = [];
+
+function loadEmployees() {
+  fetch(APPS_SCRIPT_URL + '?action=employees')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (data.status === 'success') {
+        if (data.employees) { EMPLOYEE_LIST = data.employees; }
+        if (data.foremen) { FOREMAN_LIST = data.foremen; }
+        populateAllDropdowns();
+        populateForemanDropdown();
+      }
+    })
+    .catch(function(){ EMPLOYEE_LIST = []; FOREMAN_LIST = []; });
+}
+
+function populateForemanDropdown() {
+  const sel = document.getElementById('foreman');
+  if (!sel || FOREMAN_LIST.length === 0) return;
+  // Replace text input with select
+  const parent = sel.parentElement;
+  const newSel = document.createElement('select');
+  newSel.id = 'foreman';
+  newSel.style.cssText = 'width:100%;background:transparent;border:none;border-bottom:1.5px solid var(--yellow);padding:4px 2px;font-family:Barlow,sans-serif;font-size:0.95rem;color:#111;outline:none;';
+  const blank = document.createElement('option');
+  blank.value = ''; blank.textContent = 'Select foreman...'; blank.disabled = true; blank.selected = true;
+  newSel.appendChild(blank);
+  FOREMAN_LIST.forEach(function(name) {
+    const opt = document.createElement('option');
+    opt.value = name; opt.textContent = name;
+    newSel.appendChild(opt);
+  });
+  parent.replaceChild(newSel, sel);
+}
+
+function populateAllDropdowns() {
+  document.querySelectorAll('.d-emp-select, .emp-select').forEach(function(sel) {
+    const currentVal = sel.value;
+    while (sel.options.length > 1) sel.remove(1);
+    EMPLOYEE_LIST.forEach(function(name) {
+      const opt = document.createElement('option');
+      opt.value = name; opt.textContent = name;
+      sel.appendChild(opt);
+    });
+    if (currentVal) sel.value = currentVal;
+  });
+}
+
+function buildEmpSelect(classes, dataAttrs, id) {
+  let sel = '<select class="' + classes + '"' + (id ? ' id="' + id + '"' : '') + ' ' + dataAttrs + '>';
+  sel += '<option value="" disabled selected>Select...</option>';
+  EMPLOYEE_LIST.forEach(function(name) {
+    sel += '<option value="' + name + '">' + name + '</option>';
+  });
+  sel += '</select>';
+  return sel;
+}
+
 // ── BUILD DESKTOP ────────────────────────────────────────────────────
 function buildDesktop() {
   const tbody = document.getElementById('desktopBody');
@@ -554,11 +679,23 @@ function buildDesktop() {
     filler.className = 'job-filler'; filler.colSpan = 3;
     filler.style.cssText = 'background:#3a3000;padding:3px 6px;';
     filler.innerHTML = '<span style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.58rem;color:var(--yellow);letter-spacing:1px;text-transform:uppercase;font-weight:700;">Enter Names for ' + day + '</span>';
+
+    // Add PTO row before name row
+    const ptoRow = document.createElement('tr');
+    const ptoCell = document.createElement('td');
+    ptoCell.colSpan = 10;
+    ptoCell.style.cssText = 'background:#1a1a2e;padding:5px 12px;';
+    ptoCell.innerHTML = '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;">' +
+      '<input type="checkbox" id="d-pto-cb-' + di + '" onchange="toggleDesktopPTO(' + di + ')" style="width:16px;height:16px;accent-color:#F5C400;cursor:pointer;">' +
+      '<span style="font-family:\'Barlow Condensed\',sans-serif;font-size:0.75rem;font-weight:700;color:#F5C400;letter-spacing:2px;text-transform:uppercase;">🏖 PTO — No work this day</span>' +
+      '</label>';
+    ptoRow.appendChild(ptoCell);
+    tbody.appendChild(ptoRow);
     nameRow.appendChild(filler);
     for (let ei = 0; ei < EMPS; ei++) {
       const nc = document.createElement('td');
       nc.className = 'emp-name-cell';
-      nc.innerHTML = '<input type="text" placeholder="Name..." class="d-emp-name" data-day="' + di + '" data-col="' + ei + '">';
+      nc.innerHTML = buildEmpSelect('d-emp-select d-emp-name', 'data-day="' + di + '" data-col="' + ei + '"', '');
       nameRow.appendChild(nc);
     }
     tbody.appendChild(nameRow);
@@ -567,7 +704,11 @@ function buildDesktop() {
       const jr = document.createElement('tr');
       jr.className = 'jr' + (ji%2) + (ji===JOBS-1?' daysep':'');
       const jnc = document.createElement('td'); jnc.className = 'jname';
-      jnc.innerHTML = '<input type="text" placeholder="Job name..." data-day="' + di + '" data-job="' + ji + '" data-col="jobname">';
+      jnc.innerHTML = '<input type="text" placeholder="Job name..." data-day="' + di + '" data-job="' + ji + '" data-col="jobname">' +
+        '<label style="display:flex;align-items:center;gap:4px;margin-top:3px;cursor:pointer;">' +
+        '<input type="checkbox" id="d-night-cb-' + di + '-' + ji + '" onchange="toggleDesktopNight(' + di + ',' + ji + ')" style="width:13px;height:13px;accent-color:#3a6abf;cursor:pointer;">' +
+        '<span style="font-size:0.6rem;color:#3a6abf;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;letter-spacing:0.5px;">🌙 Night Job</span>' +
+        '</label>';
       jr.appendChild(jnc);
       const jnum = document.createElement('td');
       jnum.innerHTML = '<input type="text" placeholder="#" data-day="' + di + '" data-job="' + ji + '" data-col="jobnum">';
@@ -629,7 +770,7 @@ function buildMobile() {
     let empGrid = '';
     for (let ei = 0; ei < EMPS; ei++) {
       empGrid += '<div class="day-emp-item"><label>Emp ' + (ei+1) + '</label>' +
-        '<input type="text" placeholder="Name..." class="m-emp-name" data-mday="' + di + '" data-col="' + ei + '"></div>';
+        buildEmpSelect('emp-select m-emp-name', 'data-mday="' + di + '" data-col="' + ei + '"', '') + '</div>';
     }
 
     const jobColors = ['#ffffff','#EEF3FF','#F5F5F5','#FFF9E6'];
@@ -649,6 +790,10 @@ function buildMobile() {
       }
       const isFirst = ji === 0;
       const jobContent = '<div class="job-card-body" id="job-body-' + di + '-' + ji + '" style="display:' + (isFirst ? 'block' : 'none') + ';background:' + jobColors[ji] + ';">' +
+        '<div class="night-toggle-row">' +
+          '<input type="checkbox" id="night-cb-' + di + '-' + ji + '" onchange="toggleNightJob(' + di + ',' + ji + ')">' +
+          '<label for="night-cb-' + di + '-' + ji + '">🌙 Night Job</label>' +
+        '</div>' +
         '<div class="job-fields">' +
           '<div class="job-field" style="grid-column:1/-1"><label>Job Name / Description</label>' +
           '<input type="text" placeholder="Job name..." data-mday="' + di + '" data-mjob="' + ji + '" data-mcol="jobname"></div>' +
@@ -667,8 +812,8 @@ function buildMobile() {
           '</div>' +
         '</div>' +
       '</div>';
-      jobBlocks += '<div class="job-card">' +
-        '<div class="job-card-hdr" onclick="toggleJob(' + di + ',' + ji + ')" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:' + (isFirst ? '#1a2a4a' : '#2a2a2a') + ';">' +
+      jobBlocks += '<div class="job-card" id="job-card-' + di + '-' + ji + '">' +
+        '<div class="job-card-hdr" onclick="toggleJob(' + di + ',' + ji + ')""  style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:' + (isFirst ? '#1a2a4a' : '#2a2a2a') + ';">' +
           '<span style="color:' + (isFirst ? '#7aabff' : '#F5C400') + ';font-size:0.85rem;">JOB ' + (ji+1) + (isFirst ? ' — tap to collapse' : ' — tap to expand') + '</span>' +
           '<span id="job-icon-' + di + '-' + ji + '" style="color:#F5C400;font-size:1.1rem;">' + (isFirst ? '▲' : '＋') + '</span>' +
         '</div>' +
@@ -685,7 +830,12 @@ function buildMobile() {
         '<span id="memp-drv-' + di + '-' + ei + '">—</span></div>';
     }
 
-    panel.innerHTML = '<div class="day-card">' +
+    panel.innerHTML = '<div class="day-card" id="day-card-' + di + '">' +
+      '<div class="pto-toggle-row">' +
+        '<input type="checkbox" id="pto-cb-' + di + '" onchange="togglePTO(' + di + ')">' +
+        '<label for="pto-cb-' + di + '">🏖 PTO — No work this day</label>' +
+      '</div>' +
+      '<div class="pto-banner">🏖 PTO Day — No Hours Required</div>' +
       '<div class="day-card-hdr">' + day + '</div>' +
       '<div class="day-emp-section"><span class="emp-section-lbl">Employees for ' + day + '</span>' +
       '<div class="day-emp-grid">' + empGrid + '</div></div>' +
@@ -717,6 +867,37 @@ function toggleJob(di, ji) {
     const lbl = hdr.querySelector('span');
     if (lbl) lbl.textContent = 'JOB ' + (ji+1) + (isOpen ? ' — tap to expand' : ' — tap to collapse');
   }
+}
+
+
+function toggleDesktopPTO(di) {
+  const cb = document.getElementById('d-pto-cb-' + di);
+  if (!cb) return;
+  // Gray out all inputs for this day
+  document.querySelectorAll('.d-hrs[data-day="' + di + '"], input[data-day="' + di + '"]').forEach(function(inp) {
+    inp.disabled = cb.checked;
+    inp.style.opacity = cb.checked ? '0.3' : '1';
+  });
+}
+
+function toggleDesktopNight(di, ji) {
+  const cb = document.getElementById('d-night-cb-' + di + '-' + ji);
+  const row = cb ? cb.closest('tr') : null;
+  if (row) row.style.background = cb.checked ? '#e8eeff' : '';
+}
+// ── PTO / NIGHT JOB ─────────────────────────────────────────────────
+function togglePTO(di) {
+  const card = document.getElementById('day-card-' + di);
+  const cb = document.getElementById('pto-cb-' + di);
+  if (!card || !cb) return;
+  card.classList.toggle('pto-day', cb.checked);
+}
+
+function toggleNightJob(di, ji) {
+  const card = document.getElementById('job-card-' + di + '-' + ji);
+  const cb = document.getElementById('night-cb-' + di + '-' + ji);
+  if (!card || !cb) return;
+  card.classList.toggle('night-job', cb.checked);
 }
 // ── LATE MODAL ───────────────────────────────────────────────────────
 function isLateSubmission() {
@@ -813,7 +994,13 @@ function doSubmit() {
         if(fHrs) daySection += '    Foreman: '+fHrs+' hrs\n';
         eHrs.forEach((h,ei)=>{ if(h) daySection += '    '+(empNames[ei]||'Emp '+(ei+1))+': '+h+' hrs\n'; });
 
-        const row = { day, jobName:jName, jobNum:jNum, foremanHrs:fHrs, foremanDrive:fDrv };
+        const ptoCb = document.getElementById('pto-cb-' + di) || document.getElementById('d-pto-cb-' + di);
+        const nightCb = document.getElementById('night-cb-' + di + '-' + ji) || document.getElementById('d-night-cb-' + di + '-' + ji);
+        const isPTO = ptoCb && ptoCb.checked;
+        const isNight = nightCb && nightCb.checked;
+        const row = { day, jobName:jName, jobNum:jNum, foremanHrs:fHrs, foremanDrive:fDrv,
+          dayType: isPTO ? 'PTO' : 'Regular',
+          jobType: isNight ? 'Night Job' : 'Regular' };
         for(let ei=0;ei<EMPS;ei++){
           row['emp'+(ei+1)+'Name']  = empNames[ei];
           row['emp'+(ei+1)+'Hrs']   = eHrs[ei];
@@ -1002,6 +1189,9 @@ buildMobile();
 const we = document.getElementById('weekEnding');
 if (!we.value) we.value = getNextSunday();
 loadSaved();
+loadEmployees();
 
 
 </script>
+</body>
+</html>
