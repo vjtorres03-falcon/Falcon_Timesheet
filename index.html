@@ -656,6 +656,9 @@ function populateAllDropdowns() {
   document.querySelectorAll('.d-emp-select, .emp-select').forEach(function(sel) {
     const currentVal = sel.value;
     while (sel.options.length > 1) sel.remove(1);
+    const removeOpt = document.createElement('option');
+    removeOpt.value = ''; removeOpt.textContent = '-- Remove --';
+    sel.appendChild(removeOpt);
     EMPLOYEE_LIST.forEach(function(name) {
       const opt = document.createElement('option');
       opt.value = name; opt.textContent = name;
@@ -668,6 +671,7 @@ function populateAllDropdowns() {
 function buildEmpSelect(classes, dataAttrs, id) {
   let sel = '<select class="' + classes + '"' + (id ? ' id="' + id + '"' : '') + ' ' + dataAttrs + '>';
   sel += '<option value="" disabled selected>Select...</option>';
+  sel += '<option value="">-- Remove --</option>';
   EMPLOYEE_LIST.forEach(function(name) {
     sel += '<option value="' + name + '">' + name + '</option>';
   });
@@ -1012,7 +1016,7 @@ function doSubmit() {
       const eHrs=[],eDrv=[];
       for(let ei=0;ei<EMPS;ei++){eHrs.push(g(null,ei,false));eDrv.push(g(null,ei,true));}
 
-      if (!isDayPTO) { // Always push row if not PTO, even if empty
+      if (!isDayPTO && (jName.trim()||jNum.trim()||(parseFloat(fHrs)||0)>0||(parseFloat(fDrv)||0)>0||eHrs.some(v=>parseFloat(v)>0)||eDrv.some(v=>parseFloat(v)>0))) {
         hasDay = true;
         daySection += '  Job '+(ji+1)+': '+(jName||'—')+' (#'+(jNum||'—')+')\n';
         if(fHrs) daySection += '    Foreman: '+fHrs+' hrs\n';
