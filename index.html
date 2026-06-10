@@ -331,9 +331,39 @@ tr.drv.daysep td { border-bottom: 3px solid var(--black); }
 }
 .d-emp-select option { color: #111; background: #fff; }
 
-/* datalist caret hint */
-input[list] { cursor: text; }
-input[list]::-webkit-calendar-picker-indicator { opacity: 0.4; cursor: pointer; }
+/* ── CUSTOM JOB DROPDOWN ── */
+.job-combo { position: relative; }
+.job-combo-input-wrap { display: flex; align-items: center; position: relative; }
+.job-combo input[type=text] {
+  width: 100%; border: none; background: transparent;
+  font-size: 0.8rem; padding: 2px 18px 2px 2px; outline: none;
+}
+/* desktop version inside table cell */
+.jname .job-combo input[type=text] { font-size: 0.8rem; }
+/* mobile version */
+.job-field .job-combo input[type=text] {
+  border-bottom: 1px solid #ddd; font-size: 0.9rem; padding: 2px 20px 2px 0;
+}
+.job-combo-clear {
+  position: absolute; right: 2px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; color: #bbb;
+  font-size: 0.75rem; padding: 0 2px; line-height: 1; display: none;
+}
+.job-combo-clear:hover { color: #e05050; }
+.job-combo-list {
+  display: none; position: absolute; top: 100%; left: 0; right: 0;
+  background: #fff; border: 1.5px solid var(--yellow); border-radius: 0 0 6px 6px;
+  max-height: 160px; overflow-y: auto; z-index: 5000;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+}
+.job-combo-list.open { display: block; }
+.job-combo-item {
+  padding: 6px 10px; cursor: pointer; font-size: 0.82rem;
+  border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;
+}
+.job-combo-item:last-child { border-bottom: none; }
+.job-combo-item:hover, .job-combo-item.active { background: #FFF8DC; }
+.job-combo-num { font-size: 0.68rem; color: #888; margin-left: 8px; white-space: nowrap; }
 
 /* ── NOTES SECTION ── */
 .notes-toggle-row {
@@ -354,7 +384,6 @@ input[list]::-webkit-calendar-picker-indicator { opacity: 0.4; cursor: pointer; 
 }
 .notes-body textarea::placeholder { color: #555; }
 .notes-body textarea:focus { border-color: var(--yellow); }
-/* Desktop notes row */
 .desktop-notes-row td { background: #1a1a2a; padding: 0; }
 .desktop-notes-toggle {
   display: flex; align-items: center; justify-content: space-between;
@@ -563,6 +592,11 @@ function loadSaved() {
     }
     updateAllMobileLabels();
     calcTotals();
+    // Restore clear buttons on any pre-filled job combos
+    document.querySelectorAll('.job-combo input[type=text]').forEach(inp => {
+      const btn = inp.closest('.job-combo').querySelector('.job-combo-clear');
+      if (btn) btn.style.display = inp.value ? 'block' : 'none';
+    });
     const ind = document.getElementById('saveIndicator');
     if (ind) ind.textContent = '↺ Restored save from ' + new Date().toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
   } catch(e) {}
@@ -665,69 +699,33 @@ function updateAllMobileLabels() {
 
 // ── EMPLOYEE DROPDOWNS ───────────────────────────────────────────────
 let EMPLOYEE_LIST = [];
-let FOREMAN_LIST = [];
-// JOB_LIST: [{name, num}] from the Jobs tab
-let JOB_LIST = [];
+let FOREMAN_LIST  = [];
+let JOB_LIST      = [];   // [{name, num}] from Jobs tab
 
 function loadEmployees() {
   fetch(APPS_SCRIPT_URL + '?action=employees')
-    .then(function(r){ return r.json(); })
-    .then(function(data){
+    .then(r => r.json())
+    .then(data => {
       if (data.status === 'success') {
-        if (data.employees) { EMPLOYEE_LIST = data.employees; }
-        if (data.foremen)   { FOREMAN_LIST = data.foremen; }
+        if (data.employees) EMPLOYEE_LIST = data.employees;
+        if (data.foremen)   FOREMAN_LIST  = data.foremen;
         populateAllDropdowns();
         populateForemanDropdown();
       }
     })
-    .catch(function(){ EMPLOYEE_LIST = []; FOREMAN_LIST = []; });
+    .catch(() => {});
 
-  // Fetch job list independently
   fetch(APPS_SCRIPT_URL + '?action=jobs')
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      if (data.status === 'success' && data.jobs) {
-        JOB_LIST = data.jobs;
-        populateJobDatalist();
-      }
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'success' && data.jobs) JOB_LIST = data.jobs;
     })
-    .catch(function(){ JOB_LIST = []; });
-}
-
-function populateJobDatalist() {
-  let dl = document.getElementById('job-name-datalist');
-  if (!dl) {
-    dl = document.createElement('datalist');
-    dl.id = 'job-name-datalist';
-    document.body.appendChild(dl);
-  }
-  dl.innerHTML = '';
-  JOB_LIST.forEach(function(j) {
-    const opt = document.createElement('option');
-    opt.value = j.name;
-    dl.appendChild(opt);
-  });
-}
-
-// Auto-fill job # when a matching job name is chosen; clears # if name is cleared
-function onJobNameInput(nameInput) {
-  const val = nameInput.value.trim();
-  const di  = nameInput.dataset.day  !== undefined ? nameInput.dataset.day  : nameInput.dataset.mday;
-  const ji  = nameInput.dataset.job  !== undefined ? nameInput.dataset.job  : nameInput.dataset.mjob;
-  const isM = nameInput.dataset.mday !== undefined;
-  const numInput = isM
-    ? document.querySelector('input[data-mday="'+di+'"][data-mjob="'+ji+'"][data-mcol="jobnum"]')
-    : document.querySelector('input[data-day="'+di+'"][data-job="'+ji+'"][data-col="jobnum"]');
-  if (!numInput) return;
-  if (!val) { numInput.value = ''; return; }
-  const match = JOB_LIST.find(function(j){ return j.name.toLowerCase() === val.toLowerCase(); });
-  if (match) numInput.value = match.num;
+    .catch(() => {});
 }
 
 function populateForemanDropdown() {
   const sel = document.getElementById('foreman');
   if (!sel || FOREMAN_LIST.length === 0) return;
-  // Replace text input with select
   const parent = sel.parentElement;
   const newSel = document.createElement('select');
   newSel.id = 'foreman';
@@ -735,7 +733,7 @@ function populateForemanDropdown() {
   const blank = document.createElement('option');
   blank.value = ''; blank.textContent = 'Select foreman...'; blank.disabled = true; blank.selected = true;
   newSel.appendChild(blank);
-  FOREMAN_LIST.forEach(function(name) {
+  FOREMAN_LIST.forEach(name => {
     const opt = document.createElement('option');
     opt.value = name; opt.textContent = name;
     newSel.appendChild(opt);
@@ -744,30 +742,158 @@ function populateForemanDropdown() {
 }
 
 function populateAllDropdowns() {
-  document.querySelectorAll('.d-emp-select, .emp-select').forEach(function(sel) {
-    const currentVal = sel.value;
+  document.querySelectorAll('.d-emp-select, .emp-select').forEach(sel => {
+    const cur = sel.value;
     while (sel.options.length > 1) sel.remove(1);
-    const removeOpt = document.createElement('option');
-    removeOpt.value = ''; removeOpt.textContent = '-- Remove --';
-    sel.appendChild(removeOpt);
-    EMPLOYEE_LIST.forEach(function(name) {
+    const rm = document.createElement('option');
+    rm.value = ''; rm.textContent = '-- Remove --';
+    sel.appendChild(rm);
+    EMPLOYEE_LIST.forEach(name => {
       const opt = document.createElement('option');
       opt.value = name; opt.textContent = name;
       sel.appendChild(opt);
     });
-    if (currentVal) sel.value = currentVal;
+    if (cur) sel.value = cur;
   });
 }
 
 function buildEmpSelect(classes, dataAttrs, id) {
-  let sel = '<select class="' + classes + '"' + (id ? ' id="' + id + '"' : '') + ' ' + dataAttrs + '>';
-  sel += '<option value="" disabled selected>Select...</option>';
-  sel += '<option value="">-- Remove --</option>';
-  EMPLOYEE_LIST.forEach(function(name) {
-    sel += '<option value="' + name + '">' + name + '</option>';
+  let s = '<select class="' + classes + '"' + (id ? ' id="' + id + '"' : '') + ' ' + dataAttrs + '>';
+  s += '<option value="" disabled selected>Select...</option>';
+  s += '<option value="">-- Remove --</option>';
+  EMPLOYEE_LIST.forEach(n => { s += '<option value="' + n + '">' + n + '</option>'; });
+  s += '</select>';
+  return s;
+}
+
+// ── CUSTOM JOB COMBO ─────────────────────────────────────────────────
+// Builds the HTML string for a job name combo (input + floating list)
+function buildJobCombo(dataAttrs, placeholder) {
+  return '<div class="job-combo">' +
+    '<div class="job-combo-input-wrap">' +
+      '<input type="text" placeholder="' + placeholder + '" ' + dataAttrs + ' autocomplete="off"' +
+        ' onfocus="jobComboOpen(this)" oninput="jobComboFilter(this)" onkeydown="jobComboKey(event,this)">' +
+      '<button type="button" class="job-combo-clear" onclick="jobComboClear(this)" tabindex="-1">✕</button>' +
+    '</div>' +
+    '<div class="job-combo-list"></div>' +
+  '</div>';
+}
+
+// Open / render full list (on focus or click)
+function jobComboOpen(inp) {
+  jobComboRender(inp, inp.value.trim());
+  const wrap = inp.closest('.job-combo');
+  wrap.querySelector('.job-combo-list').classList.add('open');
+}
+
+// Filter list as user types
+function jobComboFilter(inp) {
+  const wrap = inp.closest('.job-combo');
+  const q = inp.value.trim().toLowerCase();
+  jobComboRender(inp, q);
+  wrap.querySelector('.job-combo-list').classList.add('open');
+  // show/hide clear button
+  wrap.querySelector('.job-combo-clear').style.display = inp.value ? 'block' : 'none';
+  // if cleared, also clear job #
+  if (!inp.value) jobComboSetNum(inp, '');
+}
+
+// Render filtered options into the list
+function jobComboRender(inp, q) {
+  const wrap = inp.closest('.job-combo');
+  const list = wrap.querySelector('.job-combo-list');
+  const filtered = q
+    ? JOB_LIST.filter(j => j.name.toLowerCase().includes(q))
+    : JOB_LIST;
+  list.innerHTML = '';
+  if (!filtered.length) {
+    list.innerHTML = '<div class="job-combo-item" style="color:#aaa;font-style:italic;">No matches</div>';
+    return;
+  }
+  filtered.forEach(j => {
+    const item = document.createElement('div');
+    item.className = 'job-combo-item';
+    item.innerHTML = '<span>' + j.name + '</span>' + (j.num ? '<span class="job-combo-num">#' + j.num + '</span>' : '');
+    item.addEventListener('mousedown', e => {
+      e.preventDefault(); // don't blur before click
+      inp.value = j.name;
+      wrap.querySelector('.job-combo-clear').style.display = 'block';
+      jobComboSetNum(inp, j.num);
+      list.classList.remove('open');
+      saveProgress();
+    });
+    list.appendChild(item);
   });
-  sel += '</select>';
-  return sel;
+}
+
+// Keyboard nav: ArrowDown/Up move highlight, Enter selects, Escape closes
+function jobComboKey(e, inp) {
+  const list = inp.closest('.job-combo').querySelector('.job-combo-list');
+  const items = list.querySelectorAll('.job-combo-item');
+  let idx = Array.from(items).findIndex(i => i.classList.contains('active'));
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    idx = Math.min(idx + 1, items.length - 1);
+    items.forEach((i,n) => i.classList.toggle('active', n === idx));
+    items[idx] && items[idx].scrollIntoView({block:'nearest'});
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    idx = Math.max(idx - 1, 0);
+    items.forEach((i,n) => i.classList.toggle('active', n === idx));
+    items[idx] && items[idx].scrollIntoView({block:'nearest'});
+  } else if (e.key === 'Enter') {
+    const active = list.querySelector('.job-combo-item.active');
+    if (active) active.dispatchEvent(new MouseEvent('mousedown'));
+  } else if (e.key === 'Escape') {
+    list.classList.remove('open');
+  }
+}
+
+// Clear button
+function jobComboClear(btn) {
+  const wrap = btn.closest('.job-combo');
+  const inp = wrap.querySelector('input[type=text]');
+  inp.value = '';
+  btn.style.display = 'none';
+  jobComboSetNum(inp, '');
+  wrap.querySelector('.job-combo-list').classList.remove('open');
+  saveProgress();
+}
+
+// Auto-fill the paired Job # field
+function jobComboSetNum(nameInp, num) {
+  const di = nameInp.dataset.day  !== undefined ? nameInp.dataset.day  : nameInp.dataset.mday;
+  const ji = nameInp.dataset.job  !== undefined ? nameInp.dataset.job  : nameInp.dataset.mjob;
+  const isM = nameInp.dataset.mday !== undefined;
+  const numInp = isM
+    ? document.querySelector('input[data-mday="'+di+'"][data-mjob="'+ji+'"][data-mcol="jobnum"]')
+    : document.querySelector('input[data-day="'+di+'"][data-job="'+ji+'"][data-col="jobnum"]');
+  if (numInp) numInp.value = num;
+}
+
+// Close any open combo lists when clicking elsewhere
+document.addEventListener('click', e => {
+  if (!e.target.closest('.job-combo')) {
+    document.querySelectorAll('.job-combo-list.open').forEach(l => l.classList.remove('open'));
+  }
+});
+
+// ── NOTES TOGGLE ─────────────────────────────────────────────────────
+function toggleNotes(di) {
+  const body = document.getElementById('notes-body-' + di);
+  const icon = document.getElementById('notes-icon-' + di);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (icon) icon.textContent = open ? '＋' : '▲';
+}
+function toggleDesktopNotes(di) {
+  const body = document.getElementById('d-notes-body-' + di);
+  const icon = document.getElementById('d-notes-icon-' + di);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (icon) icon.textContent = open ? '＋' : '▲';
 }
 
 // ── BUILD DESKTOP ────────────────────────────────────────────────────
@@ -810,7 +936,7 @@ function buildDesktop() {
       const jr = document.createElement('tr');
       jr.className = 'jr' + (ji%2) + (ji===JOBS-1?' daysep':'');
       const jnc = document.createElement('td'); jnc.className = 'jname';
-      jnc.innerHTML = '<input type="text" placeholder="Job name..." list="job-name-datalist" data-day="' + di + '" data-job="' + ji + '" data-col="jobname" oninput="onJobNameInput(this)">' +
+      jnc.innerHTML = buildJobCombo('data-day="' + di + '" data-job="' + ji + '" data-col="jobname"', 'Job name...') +
         '<label style="display:flex;align-items:center;gap:4px;margin-top:3px;cursor:pointer;">' +
         '<input type="checkbox" id="d-night-cb-' + di + '-' + ji + '" onchange="toggleDesktopNight(' + di + ',' + ji + ')" style="width:13px;height:13px;accent-color:#3a6abf;cursor:pointer;">' +
         '<span style="font-size:0.6rem;color:#3a6abf;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;letter-spacing:0.5px;">🌙 Night Job</span>' +
@@ -918,7 +1044,7 @@ function buildMobile() {
         '</div>' +
         '<div class="job-fields">' +
           '<div class="job-field" style="grid-column:1/-1"><label>Job Name / Description</label>' +
-          '<input type="text" placeholder="Job name..." list="job-name-datalist" data-mday="' + di + '" data-mjob="' + ji + '" data-mcol="jobname" oninput="onJobNameInput(this)"></div>' +
+          buildJobCombo('data-mday="' + di + '" data-mjob="' + ji + '" data-mcol="jobname"', 'Job name...') + '</div>' +
           '<div class="job-field"><label>Job #</label>' +
           '<input type="text" placeholder="#" data-mday="' + di + '" data-mjob="' + ji + '" data-mcol="jobnum"></div>' +
           '<div class="job-field"><label>Foreman Hrs</label>' +
@@ -1014,24 +1140,6 @@ function toggleDesktopNight(di, ji) {
   const row = cb ? cb.closest('tr') : null;
   if (row) row.style.background = cb.checked ? '#e8eeff' : '';
 }
-// ── NOTES TOGGLE ─────────────────────────────────────────────────────
-function toggleNotes(di) {
-  const body = document.getElementById('notes-body-' + di);
-  const icon = document.getElementById('notes-icon-' + di);
-  if (!body) return;
-  const open = body.style.display !== 'none';
-  body.style.display = open ? 'none' : 'block';
-  if (icon) icon.textContent = open ? '＋' : '▲';
-}
-function toggleDesktopNotes(di) {
-  const body = document.getElementById('d-notes-body-' + di);
-  const icon = document.getElementById('d-notes-icon-' + di);
-  if (!body) return;
-  const open = body.style.display !== 'none';
-  body.style.display = open ? 'none' : 'block';
-  if (icon) icon.textContent = open ? '＋' : '▲';
-}
-
 // ── PTO / NIGHT JOB ─────────────────────────────────────────────────
 function togglePTO(di) {
   const card = document.getElementById('day-card-' + di);
@@ -1236,8 +1344,7 @@ function generatePDF() {
       return (mn&&mn.value.trim())||(dn&&dn.value.trim())||'';
     });
 
-    // PTO check
-    const ptoCbPdf = document.getElementById('pto-cb-'+di) || document.getElementById('d-pto-cb-'+di);
+    const ptoCbPdf = document.getElementById('pto-cb-'+di)||document.getElementById('d-pto-cb-'+di);
     const isPtoPdf = ptoCbPdf && ptoCbPdf.checked;
 
     const dayJobs=[];
@@ -1260,21 +1367,16 @@ function generatePDF() {
       const jName=g('jobname',null,null),jNum=g('jobnum',null,null),fHrs=g('for',null,null),fDrv=g('for-drive',null,null);
       const eHrs=[],eDrv=[];
       for(let ei=0;ei<EMPS;ei++){eHrs.push(g(null,ei,false));eDrv.push(g(null,ei,true));}
-      const nightCbPdf = document.getElementById('night-cb-'+di+'-'+ji) || document.getElementById('d-night-cb-'+di+'-'+ji);
-      const isNightPdf = nightCbPdf && nightCbPdf.checked;
-      if(jName||jNum||fHrs||eHrs.some(v=>v)) dayJobs.push({jName,jNum,fHrs,fDrv,eHrs,eDrv,isNight:isNightPdf});
+      const nightCb=document.getElementById('night-cb-'+di+'-'+ji)||document.getElementById('d-night-cb-'+di+'-'+ji);
+      const isNight=nightCb&&nightCb.checked;
+      if(jName||jNum||fHrs||eHrs.some(v=>v)) dayJobs.push({jName,jNum,fHrs,fDrv,eHrs,eDrv,isNight});
     }
-
-    // Skip days with nothing
     if(!dayJobs.length && !isPtoPdf) return;
 
     if(y+14>280){doc.addPage();y=14;}
-
-    // Day header bar
     doc.setFillColor(30,30,30); doc.rect(margin,y,W-margin*2,7,'F');
     doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(245,196,0);
     doc.text(day.toUpperCase(), margin+3, y+5);
-    // PTO badge in header
     if(isPtoPdf){
       doc.setFillColor(245,196,0); doc.rect(margin+55,y+1,22,5,'F');
       doc.setFont('helvetica','bold'); doc.setFontSize(5.5); doc.setTextColor(30,30,30);
@@ -1282,20 +1384,17 @@ function generatePDF() {
     }
     y+=9;
 
-    // PTO day — no job rows needed
     if(isPtoPdf){
       doc.setFillColor(255,251,200); doc.rect(margin,y,W-margin*2,7,'F');
       doc.setFont('helvetica','italic'); doc.setFontSize(7); doc.setTextColor(100,80,0);
       doc.text('No work hours — Paid Time Off', margin+4, y+5);
-      y+=11;
-      return;
+      y+=11; return;
     }
 
     const activeEmps=empNames.filter(n=>n);
     const cols=[55,20,18];
     const empColW=activeEmps.length>0?Math.min(22,(W-margin*2-cols[0]-cols[1]-cols[2])/Math.max(activeEmps.length,1)):0;
 
-    // Column header row
     doc.setFillColor(50,50,50); doc.rect(margin,y,W-margin*2,5.5,'F');
     doc.setFontSize(6); doc.setFont('helvetica','bold'); doc.setTextColor(200,200,200);
     let cx=margin+2;
@@ -1307,7 +1406,6 @@ function generatePDF() {
 
     dayJobs.forEach(job=>{
       if(y+6>280){doc.addPage();y=14;}
-      // Night job: dark blue left stripe
       if(job.isNight){
         doc.setFillColor(26,58,110); doc.rect(margin,y,3,5.5,'F');
         doc.setFillColor(224,230,248); doc.rect(margin+3,y,W-margin*2-3,5.5,'F');
@@ -1316,8 +1414,7 @@ function generatePDF() {
       }
       doc.setFontSize(6.5); doc.setFont('helvetica','normal'); doc.setTextColor(30,30,30);
       cx=margin+2;
-      const nameLabel=(job.isNight?'🌙 ':'')+((job.jName||'—').substring(0,26));
-      doc.text(nameLabel,cx,y+4);cx+=cols[0];
+      doc.text((job.isNight?'* ':'')+((job.jName||'—').substring(0,26)),cx,y+4);cx+=cols[0];
       doc.text((job.jNum||'—').substring(0,8),cx,y+4);cx+=cols[1];
       doc.text(job.fHrs||'—',cx,y+4);cx+=cols[2];
       activeEmps.forEach((n,ei)=>{const idx=empNames.indexOf(n);doc.text(job.eHrs[idx]||'—',cx,y+4);cx+=empColW;});
@@ -1327,7 +1424,7 @@ function generatePDF() {
         if(y+5>280){doc.addPage();y=14;}
         doc.setFillColor(255,251,234); doc.rect(margin,y,W-margin*2,5,'F');
         doc.setFontSize(5.5); doc.setFont('helvetica','italic'); doc.setTextColor(184,148,10);
-        cx=margin+2; doc.text('↳ Drive',cx,y+3.5);cx+=cols[0];doc.text('',cx,y+3.5);cx+=cols[1];
+        cx=margin+2; doc.text('↳ Drive',cx,y+3.5);cx+=cols[0]+cols[1];
         doc.text(job.fDrv||'—',cx,y+3.5);cx+=cols[2];
         activeEmps.forEach((n,ei)=>{const idx=empNames.indexOf(n);doc.text(job.eDrv[idx]||'—',cx,y+3.5);cx+=empColW;});
         y+=5.5;
@@ -1337,41 +1434,30 @@ function generatePDF() {
     const rEl=document.getElementById((isMob?'mfor-reg-':'dfor-reg-')+di);
     const dEl=document.getElementById((isMob?'mfor-drv-':'dfor-drv-')+di);
     const totColW=empColW;
-    // REG HRS totals row
     if(y+6>280){doc.addPage();y=14;}
     doc.setFillColor(245,196,0); doc.rect(margin,y,W-margin*2,5.5,'F');
     doc.setFont('helvetica','bold'); doc.setFontSize(6); doc.setTextColor(30,30,30);
     cx=margin+2;
-    doc.text(day.toUpperCase()+' — REG HRS', cx, y+4); cx+=cols[0]+cols[1];
-    doc.text(rEl?rEl.textContent:'—', cx, y+4); cx+=cols[2];
-    activeEmps.forEach((n,ei2)=>{
-      const idx2=empNames.indexOf(n);
-      const eEl=document.getElementById((isMob?'memp-reg-':'demp-reg-')+di+'-'+idx2);
-      doc.text(eEl?eEl.textContent:'—', cx, y+4); cx+=totColW;
-    });
+    doc.text(day.toUpperCase()+' — REG HRS',cx,y+4);cx+=cols[0]+cols[1];
+    doc.text(rEl?rEl.textContent:'—',cx,y+4);cx+=cols[2];
+    activeEmps.forEach((n,ei2)=>{const idx2=empNames.indexOf(n);const eEl=document.getElementById((isMob?'memp-reg-':'demp-reg-')+di+'-'+idx2);doc.text(eEl?eEl.textContent:'—',cx,y+4);cx+=totColW;});
     y+=6;
-    // DRIVE TIME totals row
     if(y+6>280){doc.addPage();y=14;}
     doc.setFillColor(255,243,160); doc.rect(margin,y,W-margin*2,5.5,'F');
     doc.setFont('helvetica','italic'); doc.setFontSize(6); doc.setTextColor(100,80,0);
     cx=margin+2;
-    doc.text(day.toUpperCase()+' — DRIVE TIME', cx, y+4); cx+=cols[0]+cols[1];
-    doc.text(dEl?dEl.textContent:'—', cx, y+4); cx+=cols[2];
-    activeEmps.forEach((n,ei2)=>{
-      const idx2=empNames.indexOf(n);
-      const eEl=document.getElementById((isMob?'memp-drv-':'demp-drv-')+di+'-'+idx2);
-      doc.text(eEl?eEl.textContent:'—', cx, y+4); cx+=totColW;
-    });
+    doc.text(day.toUpperCase()+' — DRIVE TIME',cx,y+4);cx+=cols[0]+cols[1];
+    doc.text(dEl?dEl.textContent:'—',cx,y+4);cx+=cols[2];
+    activeEmps.forEach((n,ei2)=>{const idx2=empNames.indexOf(n);const eEl=document.getElementById((isMob?'memp-drv-':'demp-drv-')+di+'-'+idx2);doc.text(eEl?eEl.textContent:'—',cx,y+4);cx+=totColW;});
     y+=6;
 
-    // Notes row in PDF
-    const notesTa = document.querySelector('textarea[data-notes-day="'+di+'"]');
-    const notesVal = notesTa ? notesTa.value.trim() : '';
+    const notesTa=document.querySelector('textarea[data-notes-day="'+di+'"]');
+    const notesVal=notesTa?notesTa.value.trim():'';
     if(notesVal){
       if(y+6>280){doc.addPage();y=14;}
       doc.setFillColor(245,245,245); doc.rect(margin,y,W-margin*2,5.5,'F');
       doc.setFont('helvetica','italic'); doc.setFontSize(6); doc.setTextColor(80,80,80);
-      doc.text('Notes: '+notesVal.substring(0,90), margin+2, y+4);
+      doc.text('Notes: '+notesVal.substring(0,90),margin+2,y+4);
       y+=6;
     }
     y+=4;
