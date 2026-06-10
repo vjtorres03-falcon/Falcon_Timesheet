@@ -302,7 +302,8 @@ body { background: #141414; font-family: 'Barlow', sans-serif; font-size: 14px; 
           <th>Job Name</th>
           <th>Job #</th>
           <th>Type</th>
-          <th>Hrs</th>
+          <th>Reg Hrs</th>
+          <th>Drive Hrs</th>
           <th>Submitted</th>
           <th>Notes</th>
         </tr></thead>
@@ -596,11 +597,13 @@ function renderSubmissionsTable() {
       : status.includes('Processed') ? 'processed'
       : status.includes('Review')    ? 'review'
       : 'pending';
-    const nightBadge = (r.jobType||'') === 'Night Job' ? '<span class="night-badge">🌙 NIGHT</span>' : '';
-    const ptoBadge   = (r.dayType||'') === 'PTO'       ? '<span class="pto-badge">🏖 PTO</span>'    : '';
+    const ptoBadge   = (r.dayType||'') === 'PTO' ? '<span class="pto-badge">🏖 PTO</span>' : '';
     const roleBadge  = r.role === 'Foreman'
       ? '<span style="font-size:0.55rem;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;letter-spacing:1px;color:var(--yellow);text-transform:uppercase;">Foreman</span>'
       : '<span style="font-size:0.55rem;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;letter-spacing:1px;color:#888;text-transform:uppercase;">Crew</span>';
+    const nightBadge = (r.jobType||'') === 'Night Job'
+      ? '<span class="night-badge">🌙 NIGHT</span>'
+      : '<span style="font-size:0.6rem;color:#666;font-family:\'Barlow Condensed\',sans-serif;letter-spacing:1px;">REGULAR</span>';
     return `<tr>
       <td><span class="status-pill ${statusClass}">${esc(status)}</span></td>
       <td>${esc(r.person||'—')} ${roleBadge}</td>
@@ -608,8 +611,9 @@ function renderSubmissionsTable() {
       <td>${esc(r.day)}</td>
       <td>${ptoBadge || esc(r.jobName||'—')}</td>
       <td><span class="job-num-badge">${esc(r.jobNum||'—')}</span></td>
-      <td>${nightBadge || '—'}</td>
+      <td>${ptoBadge ? '' : nightBadge}</td>
       <td class="num-cell">${r.hrs||'—'}</td>
+      <td class="num-cell" style="color:#aaa;">${r.drive||'—'}</td>
       <td style="white-space:nowrap;font-size:0.72rem;color:var(--muted);">${fmtDate(r.submittedAt)}</td>
       <td class="notes-cell" title="${esc(r.notes)}">${esc(r.notes)||'—'}</td>
     </tr>`;
