@@ -577,9 +577,13 @@ function renderSubmissionsTable() {
     }
   });
 
-  const filtered = q ? expanded.filter(r =>
-    [r.person, r.foreman, r.jobName, r.jobNum, r.day, r.notes].some(v => v && String(v).toLowerCase().includes(q))
-  ) : expanded;
+  const filtered = q ? expanded.filter(r => {
+    // Name search matches only the person on that row, not the whole submission's foreman
+    const nameMatch = (r.person||'').toLowerCase().includes(q);
+    // Non-name fields: job, day, notes still searchable
+    const otherMatch = [r.jobName, r.jobNum, r.day, r.notes].some(v => v && String(v).toLowerCase().includes(q));
+    return nameMatch || otherMatch;
+  }) : expanded;
 
   if (!filtered.length) {
     tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No submissions found.</td></tr>';
