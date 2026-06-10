@@ -701,6 +701,7 @@ function updateAllMobileLabels() {
 let EMPLOYEE_LIST = [];
 let FOREMAN_LIST  = [];
 let JOB_LIST      = [];   // [{name, num}] from Jobs tab
+let FOREMAN_EMAILS = [];  // [{name, email}] for auto-fill
 
 function loadEmployees() {
   fetch(APPS_SCRIPT_URL + '?action=employees')
@@ -709,6 +710,7 @@ function loadEmployees() {
       if (data.status === 'success') {
         if (data.employees) EMPLOYEE_LIST = data.employees;
         if (data.foremen)   FOREMAN_LIST  = data.foremen;
+        if (data.foremanEmails) FOREMAN_EMAILS = data.foremanEmails;
         populateAllDropdowns();
         populateForemanDropdown();
       }
@@ -730,6 +732,7 @@ function populateForemanDropdown() {
   const newSel = document.createElement('select');
   newSel.id = 'foreman';
   newSel.style.cssText = 'width:100%;background:transparent;border:none;border-bottom:1.5px solid var(--yellow);padding:4px 2px;font-family:Barlow,sans-serif;font-size:0.95rem;color:#111;outline:none;';
+  newSel.onchange = function() { autoFillForemanEmail(this.value); };
   const blank = document.createElement('option');
   blank.value = ''; blank.textContent = 'Select foreman...'; blank.disabled = true; blank.selected = true;
   newSel.appendChild(blank);
@@ -739,6 +742,16 @@ function populateForemanDropdown() {
     newSel.appendChild(opt);
   });
   parent.replaceChild(newSel, sel);
+}
+
+function autoFillForemanEmail(name) {
+  const emailEl = document.getElementById('foremanEmail');
+  if (!emailEl || emailEl.value.trim()) return; // don't overwrite if already filled
+  const match = FOREMAN_EMAILS.find(f => f.name === name);
+  if (match && match.email) {
+    emailEl.value = match.email;
+    saveProgress();
+  }
 }
 
 function populateAllDropdowns() {
@@ -1302,7 +1315,7 @@ function doSubmit() {
     const ptoCb2 = document.getElementById('pto-cb-' + di) || document.getElementById('d-pto-cb-' + di);
     console.log(day, 'PTO checkbox found:', !!ptoCb2, 'checked:', ptoCb2 && ptoCb2.checked);
   });
-  const payload = { weekEnding, foreman, foremanEmail, rows: sheetRows };
+  const payload = { weekEnding, foreman, foremanEmail, rows: sheetRows, summary: body };
 
   showToast('Submitting…');
   fetch(APPS_SCRIPT_URL, {
