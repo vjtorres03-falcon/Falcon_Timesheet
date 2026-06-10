@@ -325,11 +325,11 @@ tr.drv.daysep td { border-bottom: 3px solid var(--black); }
 /* Desktop employee dropdown */
 .d-emp-select {
   width: 100%; background: transparent; border: none;
-  border-bottom: 1px solid #ddd; font-size: 0.8rem;
+  border-bottom: 1.5px solid var(--yellow); font-size: 0.8rem;
   padding: 2px; outline: none; cursor: pointer;
-  color: #333;
+  color: #FFE566;
 }
-.d-emp-select option { color: #111; }
+.d-emp-select option { color: #111; background: #fff; }
 </style>
 </head>
 <body>
@@ -571,10 +571,21 @@ function calcTotals() {
       else if (inp.dataset.memp!==undefined && !inp.dataset.mdrive) meReg[parseInt(inp.dataset.memp)]+=v;
       else if (inp.dataset.memp!==undefined && inp.dataset.mdrive) meDrv[parseInt(inp.dataset.memp)]+=v;
     });
-    const mfr=document.getElementById('mfor-reg-'+di); if(mfr) mfr.textContent=fmt(mfReg);
+    const mfr=document.getElementById('mfor-reg-'+di);
+    if(mfr) {
+      mfr.textContent=fmt(mfReg);
+      mfr.parentElement.style.background = mfReg>8 ? '#FF6B00' : '';
+      mfr.parentElement.style.color = mfReg>8 ? '#fff' : '';
+    }
     const mfd=document.getElementById('mfor-drv-'+di); if(mfd) mfd.textContent=fmt(mfDrv);
     for(let ei=0;ei<EMPS;ei++){
-      const mer=document.getElementById('memp-reg-'+di+'-'+ei); if(mer) mer.textContent=fmt(meReg[ei]);
+      const mer=document.getElementById('memp-reg-'+di+'-'+ei);
+      if(mer) {
+        mer.textContent=fmt(meReg[ei]);
+        mer.parentElement.style.background = meReg[ei]>8 ? '#FF6B00' : '';
+        mer.parentElement.style.color = meReg[ei]>8 ? '#fff' : '';
+        if(meReg[ei]>8) mer.parentElement.querySelector('label') && (mer.parentElement.querySelector('label').style.color='#fff');
+      }
       const med=document.getElementById('memp-drv-'+di+'-'+ei); if(med) med.textContent=fmt(meDrv[ei]);
     }
   });
@@ -1001,7 +1012,7 @@ function doSubmit() {
       const eHrs=[],eDrv=[];
       for(let ei=0;ei<EMPS;ei++){eHrs.push(g(null,ei,false));eDrv.push(g(null,ei,true));}
 
-      if (!isDayPTO && (jName||jNum||fHrs||eHrs.some(v=>v))) {
+      if (!isDayPTO) { // Always push row if not PTO, even if empty
         hasDay = true;
         daySection += '  Job '+(ji+1)+': '+(jName||'—')+' (#'+(jNum||'—')+')\n';
         if(fHrs) daySection += '    Foreman: '+fHrs+' hrs\n';
