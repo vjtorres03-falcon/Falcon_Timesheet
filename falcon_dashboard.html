@@ -464,6 +464,7 @@ function renderTracker() {
 function renderJobTable() {
   const rows  = getFilteredRows();
   const q = document.getElementById('jobSearch').value.toLowerCase().trim();
+  const tbody = document.getElementById('jobTableBody');
 
   const jobMap = {};
   rows.forEach(r => {
