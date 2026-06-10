@@ -1025,6 +1025,12 @@ function doSubmit() {
     if (hasDay) body += daySection + '\n';
   });
 
+  console.log('sheetRows count:', sheetRows.length);
+  console.log('weekEnding:', weekEnding, 'foreman:', foreman);
+  DAYS.forEach(function(day, di) {
+    const ptoCb2 = document.getElementById('pto-cb-' + di) || document.getElementById('d-pto-cb-' + di);
+    console.log(day, 'PTO checkbox found:', !!ptoCb2, 'checked:', ptoCb2 && ptoCb2.checked);
+  });
   const payload = { weekEnding, foreman, foremanEmail, rows: sheetRows };
 
   showToast('SUBMITting...');
