@@ -480,7 +480,7 @@ function renderJobTable() {
   });
 
   const sorted = Object.values(jobMap)
-    .filter(j => !q || j.name.toLowerCase().includes(q) || j.num.toLowerCase().includes(q))
+    .filter(j => !q || (j.name||'').toLowerCase().includes(q) || (j.num||'').toLowerCase().includes(q))
     .sort((a,b) => b.reg - a.reg);
 
   if (!sorted.length) {
@@ -518,7 +518,7 @@ function renderEmpTable() {
   });
 
   const sorted = Object.entries(empMap)
-    .filter(([name]) => !q || name.toLowerCase().includes(q))
+    .filter(([name]) => !q || (name||'').toLowerCase().includes(q))
     .sort((a,b) => b[1].reg - a[1].reg);
 
   if (!sorted.length) {
@@ -578,7 +578,7 @@ function renderSubmissionsTable() {
   });
 
   const filtered = q ? expanded.filter(r =>
-    [r.person, r.foreman, r.jobName, r.jobNum, r.day, r.notes].some(v => v && v.toLowerCase().includes(q))
+    [r.person, r.foreman, r.jobName, r.jobNum, r.day, r.notes].some(v => v && (v||'').toLowerCase().includes(q))
   ) : expanded;
 
   if (!filtered.length) {
