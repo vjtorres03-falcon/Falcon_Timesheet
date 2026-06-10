@@ -1233,9 +1233,13 @@ function doSubmit() {
     if (isDayPTO) {
       hasDay = true;
       daySection += '  PTO Day\n';
+      const ptoNotesEls = document.querySelectorAll('textarea[data-notes-day="' + di + '"]');
+      let ptoNotes = '';
+      ptoNotesEls.forEach(ta => { if (ta.value.trim()) ptoNotes = ta.value.trim(); });
       sheetRows.push({
-        day: day, dayType: 'PTO', jobType: 'Regular',
-        jobName: '', jobNum: '', foremanHrs: '', foremanDrive: ''
+        day: day, dayType: 'PTO', jobType: '',
+        jobName: '', jobNum: '', foremanHrs: '', foremanDrive: '',
+        notes: ptoNotes
       });
     }
 
@@ -1274,10 +1278,22 @@ function doSubmit() {
           row['emp'+(ei+1)+'Hrs']   = eHrs[ei];
           row['emp'+(ei+1)+'Drive'] = eDrv[ei];
         }
+        // Attach day-level notes to every job row for that day
+        const notesEls = document.querySelectorAll('textarea[data-notes-day="' + di + '"]');
+        let notesVal = '';
+        notesEls.forEach(ta => { if (ta.value.trim()) notesVal = ta.value.trim(); });
+        row.notes = notesVal;
         sheetRows.push(row);
       }
     }
-    if (hasDay) body += daySection + '\n';
+    if (hasDay) {
+      // Append notes to day section in confirmation
+      const confirmNotesEls = document.querySelectorAll('textarea[data-notes-day="' + di + '"]');
+      let confirmNotes = '';
+      confirmNotesEls.forEach(ta => { if (ta.value.trim()) confirmNotes = ta.value.trim(); });
+      if (confirmNotes) daySection += '  Notes: ' + confirmNotes + '\n';
+      body += daySection + '\n';
+    }
   });
 
   console.log('sheetRows count:', sheetRows.length);
@@ -1451,8 +1467,10 @@ function generatePDF() {
     activeEmps.forEach((n,ei2)=>{const idx2=empNames.indexOf(n);const eEl=document.getElementById((isMob?'memp-drv-':'demp-drv-')+di+'-'+idx2);doc.text(eEl?eEl.textContent:'—',cx,y+4);cx+=totColW;});
     y+=6;
 
-    const notesTa=document.querySelector('textarea[data-notes-day="'+di+'"]');
-    const notesVal=notesTa?notesTa.value.trim():'';
+    // Notes — check both desktop and mobile textareas, use whichever has content
+    const allNotesTas = document.querySelectorAll('textarea[data-notes-day="'+di+'"]');
+    let notesVal = '';
+    allNotesTas.forEach(ta => { if (ta.value.trim()) notesVal = ta.value.trim(); });
     if(notesVal){
       if(y+6>280){doc.addPage();y=14;}
       doc.setFillColor(245,245,245); doc.rect(margin,y,W-margin*2,5.5,'F');
