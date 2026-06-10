@@ -971,6 +971,19 @@ function doSubmit() {
     });
 
     let daySection = '--- ' + day.toUpperCase() + ' ---\n'; let hasDay = false;
+
+    // Check PTO for this day
+    const ptoCbCheck = document.getElementById('pto-cb-' + di) || document.getElementById('d-pto-cb-' + di);
+    const isDayPTO = ptoCbCheck && ptoCbCheck.checked;
+    if (isDayPTO) {
+      hasDay = true;
+      daySection += '  PTO Day\n';
+      sheetRows.push({
+        day: day, dayType: 'PTO', jobType: 'Regular',
+        jobName: '', jobNum: '', foremanHrs: '', foremanDrive: ''
+      });
+    }
+
     for (let ji = 0; ji < JOBS; ji++) {
       const g = (col, emp, drive) => {
         if (isMob) {
@@ -988,7 +1001,7 @@ function doSubmit() {
       const eHrs=[],eDrv=[];
       for(let ei=0;ei<EMPS;ei++){eHrs.push(g(null,ei,false));eDrv.push(g(null,ei,true));}
 
-      if (jName||jNum||fHrs||eHrs.some(v=>v)) {
+      if (!isDayPTO && (jName||jNum||fHrs||eHrs.some(v=>v))) {
         hasDay = true;
         daySection += '  Job '+(ji+1)+': '+(jName||'—')+' (#'+(jNum||'—')+')\n';
         if(fHrs) daySection += '    Foreman: '+fHrs+' hrs\n';
