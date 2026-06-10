@@ -463,14 +463,13 @@ function renderTracker() {
 // ── HOURS BY JOB ──────────────────────────────────────────────────────
 function renderJobTable() {
   const rows  = getFilteredRows();
-  const q     = document.getElementById('jobSearch').value.toLowerCase();
-  const tbody = document.getElementById('jobTableBody');
+  const q = document.getElementById('jobSearch').value.toLowerCase().trim();
 
   const jobMap = {};
   rows.forEach(r => {
-    const key = r.jobNum || r.jobName || '—';
-    if (key === '—' || r.dayType === 'PTO') return;
-    if (!jobMap[key]) jobMap[key] = { name: r.jobName, num: r.jobNum, reg: 0, drv: 0 };
+    const key = (r.jobNum || r.jobName || '').toString().trim();
+    if (!key || r.dayType === 'PTO') return;
+    if (!jobMap[key]) jobMap[key] = { name: (r.jobName||'').toString().trim(), num: (r.jobNum||'').toString().trim(), reg: 0, drv: 0 };
     jobMap[key].reg += parseFloat(r.foremanHrs)  || 0;
     jobMap[key].drv += parseFloat(r.foremanDrive) || 0;
     for (let i = 1; i <= 6; i++) {
@@ -480,7 +479,7 @@ function renderJobTable() {
   });
 
   const sorted = Object.values(jobMap)
-    .filter(j => !q || (j.name||'').toLowerCase().includes(q) || (j.num||'').toLowerCase().includes(q))
+    .filter(j => !q || j.name.toLowerCase().includes(q) || j.num.toLowerCase().includes(q))
     .sort((a,b) => b.reg - a.reg);
 
   if (!sorted.length) {
@@ -538,7 +537,7 @@ function renderEmpTable() {
 // ── ALL SUBMISSIONS TABLE ─────────────────────────────────────────────
 function renderSubmissionsTable() {
   const rows  = getFilteredRows();
-  const q     = document.getElementById('subSearch').value.toLowerCase();
+  const q     = document.getElementById('subSearch').value.toLowerCase().trim();
   const tbody = document.getElementById('subTableBody');
 
   // Expand each sheet row into one row per person
@@ -578,7 +577,7 @@ function renderSubmissionsTable() {
   });
 
   const filtered = q ? expanded.filter(r =>
-    [r.person, r.foreman, r.jobName, r.jobNum, r.day, r.notes].some(v => v && (v||'').toLowerCase().includes(q))
+    [r.person, r.foreman, r.jobName, r.jobNum, r.day, r.notes].some(v => v && String(v).toLowerCase().includes(q))
   ) : expanded;
 
   if (!filtered.length) {
@@ -587,17 +586,18 @@ function renderSubmissionsTable() {
   }
 
   tbody.innerHTML = filtered.map(r => {
-    const statusClass = r.status.includes('Approved') ? 'approved'
-      : r.status.includes('Processed') ? 'processed'
-      : r.status.includes('Review')    ? 'review'
+    const status = r.status || '⏳ Pending';
+    const statusClass = status.includes('Approved') ? 'approved'
+      : status.includes('Processed') ? 'processed'
+      : status.includes('Review')    ? 'review'
       : 'pending';
-    const nightBadge = r.jobType === 'Night Job' ? '<span class="night-badge">🌙 NIGHT</span>' : '';
-    const ptoBadge   = r.dayType === 'PTO'       ? '<span class="pto-badge">🏖 PTO</span>'    : '';
+    const nightBadge = (r.jobType||'') === 'Night Job' ? '<span class="night-badge">🌙 NIGHT</span>' : '';
+    const ptoBadge   = (r.dayType||'') === 'PTO'       ? '<span class="pto-badge">🏖 PTO</span>'    : '';
     const roleBadge  = r.role === 'Foreman'
       ? '<span style="font-size:0.55rem;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;letter-spacing:1px;color:var(--yellow);text-transform:uppercase;">Foreman</span>'
       : '<span style="font-size:0.55rem;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;letter-spacing:1px;color:#888;text-transform:uppercase;">Crew</span>';
     return `<tr>
-      <td><span class="status-pill ${statusClass}">${esc(r.status||'⏳ Pending')}</span></td>
+      <td><span class="status-pill ${statusClass}">${esc(status)}</span></td>
       <td>${esc(r.person||'—')} ${roleBadge}</td>
       <td style="white-space:nowrap;">${fmtDate(r.weekEnding)}</td>
       <td>${esc(r.day)}</td>

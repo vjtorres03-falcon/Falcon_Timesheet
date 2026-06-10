@@ -606,6 +606,14 @@ function clearForm() {
   if (!confirm('Start a new week? This will clear all data.')) return;
   try { localStorage.removeItem('falconTS'); } catch(e) {}
   document.querySelectorAll('input').forEach(i => { i.value = ''; delete i.dataset.manual; });
+  document.querySelectorAll('select[data-day], select[data-mday], .d-emp-select, .emp-select').forEach(s => { s.value = ''; });
+  document.querySelectorAll('textarea[data-notes-day]').forEach(ta => { ta.value = ''; });
+  // Reset foreman dropdown
+  const foreman = document.getElementById('foreman');
+  if (foreman) foreman.value = '';
+  // Clear foremanEmail manual flag
+  const feEl = document.getElementById('foremanEmail');
+  if (feEl) { feEl.value = ''; delete feEl.dataset.manual; }
   document.getElementById('weekEnding').value = getNextSunday();
   calcTotals();
   showToast('New week started!');
