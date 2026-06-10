@@ -275,10 +275,6 @@ tr.drv.daysep td { border-bottom: 3px solid var(--black); }
   font-size: 13px;
 }
 
-/* datalist inputs get a subtle dropdown caret hint */
-input[list] { cursor: text; }
-input[list]::-webkit-calendar-picker-indicator { opacity: 0.4; cursor: pointer; }
-
 /* ── PTO DAY ── */
 .pto-toggle-row {
   display: flex; align-items: center; gap: 8px;
@@ -334,6 +330,47 @@ input[list]::-webkit-calendar-picker-indicator { opacity: 0.4; cursor: pointer; 
   color: #FFE566;
 }
 .d-emp-select option { color: #111; background: #fff; }
+
+/* datalist caret hint */
+input[list] { cursor: text; }
+input[list]::-webkit-calendar-picker-indicator { opacity: 0.4; cursor: pointer; }
+
+/* ── NOTES SECTION ── */
+.notes-toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 12px; background: #1a1a2a; border-top: 1px solid #333;
+  cursor: pointer; user-select: none;
+}
+.notes-toggle-label {
+  font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+  font-size: 0.7rem; letter-spacing: 1.5px; text-transform: uppercase; color: #aaa;
+}
+.notes-toggle-icon { color: #F5C400; font-size: 0.9rem; }
+.notes-body { background: #111; padding: 10px 12px; border-top: 1px solid #222; }
+.notes-body textarea {
+  width: 100%; background: #1e1e1e; border: 1px solid #333; border-radius: 6px;
+  color: #ddd; font-family: 'Barlow', sans-serif; font-size: 0.85rem;
+  padding: 8px 10px; outline: none; resize: vertical; min-height: 64px; line-height: 1.5;
+}
+.notes-body textarea::placeholder { color: #555; }
+.notes-body textarea:focus { border-color: var(--yellow); }
+/* Desktop notes row */
+.desktop-notes-row td { background: #1a1a2a; padding: 0; }
+.desktop-notes-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 5px 10px; cursor: pointer; user-select: none;
+}
+.desktop-notes-toggle span:first-child {
+  font-family: 'Barlow Condensed', sans-serif; font-size: 0.65rem;
+  font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #aaa;
+}
+.desktop-notes-body { display: none; padding: 6px 10px 8px; }
+.desktop-notes-body textarea {
+  width: 100%; background: #111; border: 1px solid #333; border-radius: 4px;
+  color: #ddd; font-family: 'Barlow', sans-serif; font-size: 0.8rem;
+  padding: 6px 8px; outline: none; resize: vertical; min-height: 52px;
+}
+.desktop-notes-body textarea:focus { border-color: var(--yellow); }
 </style>
 </head>
 <body>
@@ -489,6 +526,9 @@ function saveProgress() {
       data.inputs[key] = inp.value;
     }
   });
+  document.querySelectorAll('textarea[data-notes-day]').forEach(ta => {
+    data.inputs['notes-' + ta.dataset.notesDay] = ta.value;
+  });
   try { localStorage.setItem('falconTS', JSON.stringify(data)); } catch(e) {}
   const ind = document.getElementById('saveIndicator');
   if (ind) ind.textContent = '✓ Saved at ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
@@ -505,6 +545,11 @@ function loadSaved() {
     if (feEl && data.foremanEmail) feEl.value = data.foremanEmail;
     if (data.inputs) {
       Object.entries(data.inputs).forEach(([key, val]) => {
+        if (key.startsWith('notes-')) {
+          const di = key.replace('notes-', '');
+          document.querySelectorAll('textarea[data-notes-day="' + di + '"]').forEach(ta => { ta.value = val; });
+          return;
+        }
         let el = document.getElementById(key) || document.querySelector('select#' + key);
         if (!el) {
           try {
@@ -621,7 +666,7 @@ function updateAllMobileLabels() {
 // ── EMPLOYEE DROPDOWNS ───────────────────────────────────────────────
 let EMPLOYEE_LIST = [];
 let FOREMAN_LIST = [];
-// JOB_LIST: array of { name, num } objects loaded from the Jobs tab
+// JOB_LIST: [{name, num}] from the Jobs tab
 let JOB_LIST = [];
 
 function loadEmployees() {
@@ -637,19 +682,18 @@ function loadEmployees() {
     })
     .catch(function(){ EMPLOYEE_LIST = []; FOREMAN_LIST = []; });
 
-  // Fetch job list from Jobs tab independently
+  // Fetch job list independently
   fetch(APPS_SCRIPT_URL + '?action=jobs')
     .then(function(r){ return r.json(); })
     .then(function(data){
       if (data.status === 'success' && data.jobs) {
-        JOB_LIST = data.jobs; // [{name, num}, ...]
+        JOB_LIST = data.jobs;
         populateJobDatalist();
       }
     })
     .catch(function(){ JOB_LIST = []; });
 }
 
-// Build/refresh the shared datalist used by all job name inputs
 function populateJobDatalist() {
   let dl = document.getElementById('job-name-datalist');
   if (!dl) {
@@ -661,31 +705,23 @@ function populateJobDatalist() {
   JOB_LIST.forEach(function(j) {
     const opt = document.createElement('option');
     opt.value = j.name;
-    opt.setAttribute('data-jobnum', j.num);
     dl.appendChild(opt);
   });
 }
 
-// Called oninput on any job name field — autofills the paired job # field
+// Auto-fill job # when a matching job name is chosen; clears # if name is cleared
 function onJobNameInput(nameInput) {
   const val = nameInput.value.trim();
-  const match = JOB_LIST.find(function(j){ return j.name.toLowerCase() === val.toLowerCase(); });
-  if (!match) return;
-
-  // Determine whether this is desktop or mobile by which data attrs are present
   const di  = nameInput.dataset.day  !== undefined ? nameInput.dataset.day  : nameInput.dataset.mday;
   const ji  = nameInput.dataset.job  !== undefined ? nameInput.dataset.job  : nameInput.dataset.mjob;
   const isM = nameInput.dataset.mday !== undefined;
-
-  let numInput;
-  if (isM) {
-    numInput = document.querySelector('input[data-mday="'+di+'"][data-mjob="'+ji+'"][data-mcol="jobnum"]');
-  } else {
-    numInput = document.querySelector('input[data-day="'+di+'"][data-job="'+ji+'"][data-col="jobnum"]');
-  }
-  if (numInput && !numInput.value) {
-    numInput.value = match.num;
-  }
+  const numInput = isM
+    ? document.querySelector('input[data-mday="'+di+'"][data-mjob="'+ji+'"][data-mcol="jobnum"]')
+    : document.querySelector('input[data-day="'+di+'"][data-job="'+ji+'"][data-col="jobnum"]');
+  if (!numInput) return;
+  if (!val) { numInput.value = ''; return; }
+  const match = JOB_LIST.find(function(j){ return j.name.toLowerCase() === val.toLowerCase(); });
+  if (match) numInput.value = match.num;
 }
 
 function populateForemanDropdown() {
@@ -808,6 +844,22 @@ function buildDesktop() {
       tbody.appendChild(dr);
     }
 
+    // Notes row (collapsible, before totals)
+    const notesRow = document.createElement('tr');
+    notesRow.className = 'desktop-notes-row';
+    const notesCell = document.createElement('td');
+    notesCell.colSpan = 3 + EMPS;
+    notesCell.innerHTML =
+      '<div class="desktop-notes-toggle" onclick="toggleDesktopNotes(' + di + ')">' +
+        '<span>📝 Notes / Comments</span>' +
+        '<span id="d-notes-icon-' + di + '" style="color:var(--yellow);font-size:0.85rem;">＋</span>' +
+      '</div>' +
+      '<div class="desktop-notes-body" id="d-notes-body-' + di + '">' +
+        '<textarea placeholder="Add notes for ' + day + ' (optional)..." data-notes-day="' + di + '" oninput="saveProgress()"></textarea>' +
+      '</div>';
+    notesRow.appendChild(notesCell);
+    tbody.appendChild(notesRow);
+
     const tr = document.createElement('tr'); tr.className = 'tot-row';
     const tl = document.createElement('td'); tl.colSpan = 2; tl.className = 'tot-lbl';
     tl.textContent = day + ' — Reg Hrs'; tr.appendChild(tl);
@@ -910,6 +962,13 @@ function buildMobile() {
       '<div class="day-emp-section"><span class="emp-section-lbl">Employees for ' + day + '</span>' +
       '<div class="day-emp-grid">' + empGrid + '</div></div>' +
       jobBlocks +
+      '<div class="notes-toggle-row" onclick="toggleNotes(' + di + ')">' +
+        '<span class="notes-toggle-label">📝 Notes / Comments</span>' +
+        '<span class="notes-toggle-icon" id="notes-icon-' + di + '">＋</span>' +
+      '</div>' +
+      '<div class="notes-body" id="notes-body-' + di + '" style="display:none;">' +
+        '<textarea placeholder="Add notes for ' + day + ' (optional)..." data-notes-day="' + di + '" oninput="saveProgress()"></textarea>' +
+      '</div>' +
       '<div class="day-totals"><div class="tot-hdr">' + day + ' — Total Hours</div>' +
       '<div class="tot-grid">' + totGrid + '</div></div>' +
       '</div>';
@@ -955,6 +1014,24 @@ function toggleDesktopNight(di, ji) {
   const row = cb ? cb.closest('tr') : null;
   if (row) row.style.background = cb.checked ? '#e8eeff' : '';
 }
+// ── NOTES TOGGLE ─────────────────────────────────────────────────────
+function toggleNotes(di) {
+  const body = document.getElementById('notes-body-' + di);
+  const icon = document.getElementById('notes-icon-' + di);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (icon) icon.textContent = open ? '＋' : '▲';
+}
+function toggleDesktopNotes(di) {
+  const body = document.getElementById('d-notes-body-' + di);
+  const icon = document.getElementById('d-notes-icon-' + di);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (icon) icon.textContent = open ? '＋' : '▲';
+}
+
 // ── PTO / NIGHT JOB ─────────────────────────────────────────────────
 function togglePTO(di) {
   const card = document.getElementById('day-card-' + di);
@@ -1103,7 +1180,7 @@ function doSubmit() {
   });
   const payload = { weekEnding, foreman, foremanEmail, rows: sheetRows };
 
-  showToast('SUBMITting...');
+  showToast('Submitting…');
   fetch(APPS_SCRIPT_URL, {
     method: 'POST', mode: 'no-cors',
     headers: {'Content-Type':'application/json'},
@@ -1158,10 +1235,14 @@ function generatePDF() {
       const dn=document.querySelector('.d-emp-name[data-day="'+di+'"][data-col="'+ei+'"]');
       return (mn&&mn.value.trim())||(dn&&dn.value.trim())||'';
     });
+
+    // PTO check
+    const ptoCbPdf = document.getElementById('pto-cb-'+di) || document.getElementById('d-pto-cb-'+di);
+    const isPtoPdf = ptoCbPdf && ptoCbPdf.checked;
+
     const dayJobs=[];
     for(let ji=0;ji<JOBS;ji++){
       const g=(col,emp,drive)=>{
-        // Try desktop first, then mobile
         let el=null;
         if(col!==null){
           el=document.querySelector('input[data-day="'+di+'"][data-job="'+ji+'"][data-col="'+col+'"]');
@@ -1179,19 +1260,42 @@ function generatePDF() {
       const jName=g('jobname',null,null),jNum=g('jobnum',null,null),fHrs=g('for',null,null),fDrv=g('for-drive',null,null);
       const eHrs=[],eDrv=[];
       for(let ei=0;ei<EMPS;ei++){eHrs.push(g(null,ei,false));eDrv.push(g(null,ei,true));}
-      if(jName||jNum||fHrs||eHrs.some(v=>v)) dayJobs.push({jName,jNum,fHrs,fDrv,eHrs,eDrv});
+      const nightCbPdf = document.getElementById('night-cb-'+di+'-'+ji) || document.getElementById('d-night-cb-'+di+'-'+ji);
+      const isNightPdf = nightCbPdf && nightCbPdf.checked;
+      if(jName||jNum||fHrs||eHrs.some(v=>v)) dayJobs.push({jName,jNum,fHrs,fDrv,eHrs,eDrv,isNight:isNightPdf});
     }
-    if(!dayJobs.length) return;
 
-    if(y+10+dayJobs.length*14+12>280){doc.addPage();y=14;}
+    // Skip days with nothing
+    if(!dayJobs.length && !isPtoPdf) return;
+
+    if(y+14>280){doc.addPage();y=14;}
+
+    // Day header bar
     doc.setFillColor(30,30,30); doc.rect(margin,y,W-margin*2,7,'F');
     doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(245,196,0);
-    doc.text(day.toUpperCase(), margin+3, y+5); y+=9;
+    doc.text(day.toUpperCase(), margin+3, y+5);
+    // PTO badge in header
+    if(isPtoPdf){
+      doc.setFillColor(245,196,0); doc.rect(margin+55,y+1,22,5,'F');
+      doc.setFont('helvetica','bold'); doc.setFontSize(5.5); doc.setTextColor(30,30,30);
+      doc.text('PTO DAY', margin+57, y+5);
+    }
+    y+=9;
+
+    // PTO day — no job rows needed
+    if(isPtoPdf){
+      doc.setFillColor(255,251,200); doc.rect(margin,y,W-margin*2,7,'F');
+      doc.setFont('helvetica','italic'); doc.setFontSize(7); doc.setTextColor(100,80,0);
+      doc.text('No work hours — Paid Time Off', margin+4, y+5);
+      y+=11;
+      return;
+    }
 
     const activeEmps=empNames.filter(n=>n);
     const cols=[55,20,18];
     const empColW=activeEmps.length>0?Math.min(22,(W-margin*2-cols[0]-cols[1]-cols[2])/Math.max(activeEmps.length,1)):0;
 
+    // Column header row
     doc.setFillColor(50,50,50); doc.rect(margin,y,W-margin*2,5.5,'F');
     doc.setFontSize(6); doc.setFont('helvetica','bold'); doc.setTextColor(200,200,200);
     let cx=margin+2;
@@ -1202,16 +1306,25 @@ function generatePDF() {
     y+=6.5;
 
     dayJobs.forEach(job=>{
-      doc.setFillColor(232,240,252); doc.rect(margin,y,W-margin*2,5.5,'F');
+      if(y+6>280){doc.addPage();y=14;}
+      // Night job: dark blue left stripe
+      if(job.isNight){
+        doc.setFillColor(26,58,110); doc.rect(margin,y,3,5.5,'F');
+        doc.setFillColor(224,230,248); doc.rect(margin+3,y,W-margin*2-3,5.5,'F');
+      } else {
+        doc.setFillColor(232,240,252); doc.rect(margin,y,W-margin*2,5.5,'F');
+      }
       doc.setFontSize(6.5); doc.setFont('helvetica','normal'); doc.setTextColor(30,30,30);
       cx=margin+2;
-      doc.text((job.jName||'—').substring(0,28),cx,y+4);cx+=cols[0];
+      const nameLabel=(job.isNight?'🌙 ':'')+((job.jName||'—').substring(0,26));
+      doc.text(nameLabel,cx,y+4);cx+=cols[0];
       doc.text((job.jNum||'—').substring(0,8),cx,y+4);cx+=cols[1];
       doc.text(job.fHrs||'—',cx,y+4);cx+=cols[2];
       activeEmps.forEach((n,ei)=>{const idx=empNames.indexOf(n);doc.text(job.eHrs[idx]||'—',cx,y+4);cx+=empColW;});
       y+=6;
       const hasDrive=job.fDrv||job.eDrv.some(v=>v);
       if(hasDrive){
+        if(y+5>280){doc.addPage();y=14;}
         doc.setFillColor(255,251,234); doc.rect(margin,y,W-margin*2,5,'F');
         doc.setFontSize(5.5); doc.setFont('helvetica','italic'); doc.setTextColor(184,148,10);
         cx=margin+2; doc.text('↳ Drive',cx,y+3.5);cx+=cols[0];doc.text('',cx,y+3.5);cx+=cols[1];
@@ -1223,9 +1336,9 @@ function generatePDF() {
 
     const rEl=document.getElementById((isMob?'mfor-reg-':'dfor-reg-')+di);
     const dEl=document.getElementById((isMob?'mfor-drv-':'dfor-drv-')+di);
-    // Totals row — same table structure as job rows
-    const totColW = empColW;
-    // REG HRS row
+    const totColW=empColW;
+    // REG HRS totals row
+    if(y+6>280){doc.addPage();y=14;}
     doc.setFillColor(245,196,0); doc.rect(margin,y,W-margin*2,5.5,'F');
     doc.setFont('helvetica','bold'); doc.setFontSize(6); doc.setTextColor(30,30,30);
     cx=margin+2;
@@ -1237,7 +1350,8 @@ function generatePDF() {
       doc.text(eEl?eEl.textContent:'—', cx, y+4); cx+=totColW;
     });
     y+=6;
-    // DRIVE TIME row
+    // DRIVE TIME totals row
+    if(y+6>280){doc.addPage();y=14;}
     doc.setFillColor(255,243,160); doc.rect(margin,y,W-margin*2,5.5,'F');
     doc.setFont('helvetica','italic'); doc.setFontSize(6); doc.setTextColor(100,80,0);
     cx=margin+2;
@@ -1248,7 +1362,19 @@ function generatePDF() {
       const eEl=document.getElementById((isMob?'memp-drv-':'demp-drv-')+di+'-'+idx2);
       doc.text(eEl?eEl.textContent:'—', cx, y+4); cx+=totColW;
     });
-    y+=8;
+    y+=6;
+
+    // Notes row in PDF
+    const notesTa = document.querySelector('textarea[data-notes-day="'+di+'"]');
+    const notesVal = notesTa ? notesTa.value.trim() : '';
+    if(notesVal){
+      if(y+6>280){doc.addPage();y=14;}
+      doc.setFillColor(245,245,245); doc.rect(margin,y,W-margin*2,5.5,'F');
+      doc.setFont('helvetica','italic'); doc.setFontSize(6); doc.setTextColor(80,80,80);
+      doc.text('Notes: '+notesVal.substring(0,90), margin+2, y+4);
+      y+=6;
+    }
+    y+=4;
   });
 
   const pages=doc.internal.getNumberOfPages();
