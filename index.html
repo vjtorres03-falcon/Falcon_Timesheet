@@ -472,7 +472,7 @@ tr.drv.daysep td { border-bottom: 3px solid var(--black); }
   </div>
   <div class="info-field">
     <label>Foreman Email</label>
-    <input type="email" id="foremanEmail" placeholder="your@email.com">
+    <input type="email" id="foremanEmail" placeholder="your@email.com" oninput="this.dataset.manual='true'">
   </div>
 </div>
 
@@ -605,7 +605,7 @@ function loadSaved() {
 function clearForm() {
   if (!confirm('Start a new week? This will clear all data.')) return;
   try { localStorage.removeItem('falconTS'); } catch(e) {}
-  document.querySelectorAll('input').forEach(i => i.value = '');
+  document.querySelectorAll('input').forEach(i => { i.value = ''; delete i.dataset.manual; });
   document.getElementById('weekEnding').value = getNextSunday();
   calcTotals();
   showToast('New week started!');
@@ -746,12 +746,13 @@ function populateForemanDropdown() {
 
 function autoFillForemanEmail(name) {
   const emailEl = document.getElementById('foremanEmail');
-  if (!emailEl || emailEl.value.trim()) return; // don't overwrite if already filled
+  if (!emailEl) return;
+  // Always update when foreman selection changes —
+  // only skip if the email was manually edited (marked by data-manual attribute)
+  if (emailEl.dataset.manual === 'true') return;
   const match = FOREMAN_EMAILS.find(f => f.name === name);
-  if (match && match.email) {
-    emailEl.value = match.email;
-    saveProgress();
-  }
+  emailEl.value = match ? match.email : '';
+  saveProgress();
 }
 
 function populateAllDropdowns() {
