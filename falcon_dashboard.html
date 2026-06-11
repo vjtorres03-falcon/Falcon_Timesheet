@@ -505,7 +505,7 @@ function loadData() {
 
 // ── WEEK SELECTS ──────────────────────────────────────────────────────
 function populateWeekSelects() {
-  const weeks = [...new Set(ALL_SUBMISSIONS.map(r => r.weekEnding).filter(Boolean))].sort().reverse();
+  const weeks = [...new Set(ALL_SUBMISSIONS.map(r => normalizeDate(r.weekEnding)).filter(Boolean))].sort().reverse();
   ['weekSelect','mobWeekSelect'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
@@ -519,11 +519,17 @@ function populateWeekSelects() {
   });
 }
 
+function normalizeDate(val) {
+  if (!val) return '';
+  const s = String(val);
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? m[1]+'-'+m[2]+'-'+m[3] : s.substring(0,10);
+}
+
 function getFilteredRows() {
-  const week = (document.getElementById('weekSelect') || document.getElementById('mobWeekSelect') || {}).value || '';
   const sel = document.getElementById('weekSelect') || document.getElementById('mobWeekSelect');
   const w = sel ? sel.value : '';
-  return w ? ALL_SUBMISSIONS.filter(r => r.weekEnding === w) : ALL_SUBMISSIONS;
+  return w ? ALL_SUBMISSIONS.filter(r => normalizeDate(r.weekEnding) === w) : ALL_SUBMISSIONS;
 }
 
 // ── RENDER ALL ────────────────────────────────────────────────────────
@@ -583,7 +589,7 @@ function expandRows(rows) {
 
 function isLate(submittedAt, weekEnding) {
   if (!weekEnding || !submittedAt) return false;
-  const we = new Date(weekEnding + 'T00:00:00');
+  const we = new Date(normalizeDate(weekEnding) + 'T00:00:00');
   const deadline = new Date(we); deadline.setDate(we.getDate()+1); deadline.setHours(23,59,59);
   return new Date(submittedAt) > deadline;
 }
