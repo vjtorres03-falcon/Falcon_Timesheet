@@ -1240,6 +1240,18 @@ function closeConfirm() {
   document.getElementById('confirmOverlay').style.display = 'none';
 }
 
+// ── DAY DATE HELPER ──────────────────────────────────────────────────
+// Returns "Monday 6/9/2026" style string for a given day index (0=Mon … 6=Sun)
+// Week ending is always Sunday, so Mon = Sunday - 6, Tue = Sunday - 5, etc.
+function getDayDate(weekEndingVal, di) {
+  if (!weekEndingVal) return '';
+  const sun = new Date(weekEndingVal + 'T00:00:00');
+  const offset = di === 6 ? 0 : di - 6; // di 0=Mon(-6) … di 5=Sat(-1) … di 6=Sun(0)
+  const d = new Date(sun);
+  d.setDate(sun.getDate() + offset);
+  return (d.getMonth()+1) + '/' + d.getDate() + '/' + d.getFullYear();
+}
+
 // ── SUBMIT ───────────────────────────────────────────────────────────
 function submitTimesheet() {
   const weekEnding = document.getElementById('weekEnding').value;
@@ -1272,7 +1284,11 @@ function doSubmit() {
       return (mn && mn.value.trim()) || (dn && dn.value.trim()) || '';
     });
 
-    let daySection = '--- ' + day.toUpperCase() + ' ---\n'; let hasDay = false;
+    // Build separate date for this day
+    const dayDate  = getDayDate(weekEnding, di);
+    const dayLabel = dayDate ? day + ' ' + dayDate : day; // used in confirmation text + PDF only
+
+    let daySection = '--- ' + dayLabel.toUpperCase() + ' ---\n'; let hasDay = false;
 
     // Check PTO — check both checkboxes since both DOM views exist simultaneously
     const ptoCbMob  = document.getElementById('pto-cb-' + di);
@@ -1285,7 +1301,7 @@ function doSubmit() {
       let ptoNotes = '';
       ptoNotesEls.forEach(ta => { if (ta.value.trim()) ptoNotes = ta.value.trim(); });
       sheetRows.push({
-        day: day, dayType: 'PTO', jobType: '',
+        day: day, dayDate: dayDate, dayType: 'PTO', jobType: '',
         jobName: '', jobNum: '', foremanHrs: '', foremanDrive: '',
         notes: ptoNotes
       });
@@ -1321,7 +1337,7 @@ function doSubmit() {
         if(fHrs) daySection += '    Foreman: '+fHrs+' hrs\n';
         eHrs.forEach((h,ei)=>{ if(h) daySection += '    '+(empNames[ei]||'Emp '+(ei+1))+': '+h+' hrs\n'; });
 
-        const row = { day, jobName:jName, jobNum:jNum, foremanHrs:fHrs, foremanDrive:fDrv,
+        const row = { day: day, dayDate: dayDate, jobName:jName, jobNum:jNum, foremanHrs:fHrs, foremanDrive:fDrv,
           dayType: isPTO ? 'PTO' : 'Regular',
           jobType: isNight ? 'Night Job' : 'Regular' };
         for(let ei=0;ei<EMPS;ei++){
@@ -1412,6 +1428,9 @@ function generatePDF() {
       return (mn&&mn.value.trim())||(dn&&dn.value.trim())||'';
     });
 
+    const dayDate  = getDayDate(weekEnding, di);
+    const dayLabel = dayDate ? day + ' ' + dayDate : day;
+
     const ptoCbPdfM = document.getElementById('pto-cb-'+di);
     const ptoCbPdfD = document.getElementById('d-pto-cb-'+di);
     const isPtoPdf  = (ptoCbPdfM && ptoCbPdfM.checked) || (ptoCbPdfD && ptoCbPdfD.checked);
@@ -1446,7 +1465,7 @@ function generatePDF() {
     if(y+14>280){doc.addPage();y=14;}
     doc.setFillColor(30,30,30); doc.rect(margin,y,W-margin*2,7,'F');
     doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(245,196,0);
-    doc.text(day.toUpperCase(), margin+3, y+5);
+    doc.text(dayLabel.toUpperCase(), margin+3, y+5);
     if(isPtoPdf){
       doc.setFillColor(245,196,0); doc.rect(margin+55,y+1,22,5,'F');
       doc.setFont('helvetica','bold'); doc.setFontSize(5.5); doc.setTextColor(30,30,30);
@@ -1508,7 +1527,7 @@ function generatePDF() {
     doc.setFillColor(245,196,0); doc.rect(margin,y,W-margin*2,5.5,'F');
     doc.setFont('helvetica','bold'); doc.setFontSize(6); doc.setTextColor(30,30,30);
     cx=margin+2;
-    doc.text(day.toUpperCase()+' — REG HRS',cx,y+4);cx+=cols[0]+cols[1];
+    doc.text(dayLabel.toUpperCase()+' — REG HRS',cx,y+4);cx+=cols[0]+cols[1];
     doc.text(rEl?rEl.textContent:'—',cx,y+4);cx+=cols[2];
     activeEmps.forEach((n,ei2)=>{const idx2=empNames.indexOf(n);const eEl=document.getElementById((isMob?'memp-reg-':'demp-reg-')+di+'-'+idx2);doc.text(eEl?eEl.textContent:'—',cx,y+4);cx+=totColW;});
     y+=6;
@@ -1516,7 +1535,7 @@ function generatePDF() {
     doc.setFillColor(255,243,160); doc.rect(margin,y,W-margin*2,5.5,'F');
     doc.setFont('helvetica','italic'); doc.setFontSize(6); doc.setTextColor(100,80,0);
     cx=margin+2;
-    doc.text(day.toUpperCase()+' — DRIVE TIME',cx,y+4);cx+=cols[0]+cols[1];
+    doc.text(dayLabel.toUpperCase()+' — DRIVE TIME',cx,y+4);cx+=cols[0]+cols[1];
     doc.text(dEl?dEl.textContent:'—',cx,y+4);cx+=cols[2];
     activeEmps.forEach((n,ei2)=>{const idx2=empNames.indexOf(n);const eEl=document.getElementById((isMob?'memp-drv-':'demp-drv-')+di+'-'+idx2);doc.text(eEl?eEl.textContent:'—',cx,y+4);cx+=totColW;});
     y+=6;

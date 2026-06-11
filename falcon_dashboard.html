@@ -433,7 +433,7 @@ body { background: #141414; font-family: 'Barlow', sans-serif; font-size: 14px; 
     <div class="full-table-card">
       <table>
         <thead><tr>
-          <th>Status</th><th>Person</th><th>Week Ending</th><th>Day</th>
+          <th>Status</th><th>Person</th><th>Week Ending</th><th>Day</th><th>Date</th>
           <th>Job Name</th><th>Job #</th><th>Type</th>
           <th>Reg Hrs</th><th>Drive Hrs</th><th>Submitted</th><th>Notes</th>
         </tr></thead>
@@ -573,7 +573,7 @@ function buildEmpMap(rows) {
 function expandRows(rows) {
   const expanded = [];
   rows.forEach(r => {
-    const base = { status:r.status, foreman:r.foreman, weekEnding:r.weekEnding, day:r.day, dayType:r.dayType, jobType:r.jobType, jobName:r.jobName, jobNum:r.jobNum, submittedAt:r.submittedAt, notes:r.notes };
+    const base = { status:r.status, foreman:r.foreman, weekEnding:r.weekEnding, day:r.day, dayDate:r.dayDate, dayType:r.dayType, jobType:r.jobType, jobName:r.jobName, jobNum:r.jobNum, submittedAt:r.submittedAt, notes:r.notes };
     if (r.dayType === 'PTO') { expanded.push({...base, person:r.foreman, role:'Foreman', hrs:'', drive:''}); return; }
     if (r.foreman || r.foremanHrs) expanded.push({...base, person:r.foreman, role:'Foreman', hrs:r.foremanHrs, drive:r.foremanDrive});
     for (let i=1;i<=6;i++) { const n=r['emp'+i+'Name'], h=r['emp'+i+'Hrs'], d=r['emp'+i+'Drive']; if(n||h) expanded.push({...base, person:n, role:'Crew', hrs:h, drive:d}); }
@@ -692,7 +692,7 @@ function renderSubmissionsTable() {
     const ptoBadge  = (r.dayType||'')==='PTO'?'<span class="pto-badge">🏖 PTO</span>':'';
     const nightBadge= (r.jobType||'')==='Night Job'?'<span class="night-badge">🌙 NIGHT</span>':'<span style="font-size:0.6rem;color:#555;font-family:\'Barlow Condensed\',sans-serif;letter-spacing:1px;">REGULAR</span>';
     const roleBadge = r.role==='Foreman'?'<span style="font-size:0.55rem;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;letter-spacing:1px;color:var(--yellow);text-transform:uppercase;">Foreman</span>':'<span style="font-size:0.55rem;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;letter-spacing:1px;color:#888;text-transform:uppercase;">Crew</span>';
-    return `<tr><td><span class="status-pill ${sc}">${esc(status)}</span></td><td>${esc(r.person||'—')} ${roleBadge}</td><td style="white-space:nowrap;">${fmtDate(r.weekEnding)}</td><td>${esc(r.day)}</td><td>${ptoBadge||esc(r.jobName||'—')}</td><td><span class="job-num-badge">${esc(r.jobNum||'—')}</span></td><td>${ptoBadge?'':nightBadge}</td><td class="num-cell">${r.hrs||'—'}</td><td class="num-cell" style="color:#aaa;">${r.drive||'—'}</td><td style="white-space:nowrap;font-size:0.72rem;color:var(--muted);">${fmtDate(r.submittedAt)}</td><td class="notes-cell" title="${esc(r.notes)}">${esc(r.notes)||'—'}</td></tr>`;
+    return `<tr><td><span class="status-pill ${sc}">${esc(status)}</span></td><td>${esc(r.person||'—')} ${roleBadge}</td><td style="white-space:nowrap;">${fmtDate(r.weekEnding)}</td><td>${esc(r.day)}</td><td style="white-space:nowrap;color:#aaa;">${esc(r.dayDate||'')}</td><td>${ptoBadge||esc(r.jobName||'—')}</td><td><span class="job-num-badge">${esc(r.jobNum||'—')}</span></td><td>${ptoBadge?'':nightBadge}</td><td class="num-cell">${r.hrs||'—'}</td><td class="num-cell" style="color:#aaa;">${r.drive||'—'}</td><td style="white-space:nowrap;font-size:0.72rem;color:var(--muted);">${fmtDate(r.submittedAt)}</td><td class="notes-cell" title="${esc(r.notes)}">${esc(r.notes)||'—'}</td></tr>`;
   }).join('');
 }
 
@@ -717,7 +717,7 @@ function renderMobSubCards() {
       </div>
       <div class="sub-card-grid">
         <div><span class="sub-card-label">Day</span><span class="sub-card-val">${esc(r.day||'—')}</span></div>
-        <div><span class="sub-card-label">Week Ending</span><span class="sub-card-val">${fmtDate(r.weekEnding)}</span></div>
+        <div><span class="sub-card-label">Date</span><span class="sub-card-val">${esc(r.dayDate||'—')}</span></div>
         <div><span class="sub-card-label">Job</span><span class="sub-card-val">${isPTO?'🏖 PTO':esc(r.jobName||'—')}${r.jobNum?' <span class="job-num-badge">#'+esc(r.jobNum)+'</span>':''}</span></div>
         <div><span class="sub-card-label">Type</span><span class="sub-card-val">${isNight?'🌙 Night':isPTO?'—':'Regular'}</span></div>
         <div><span class="sub-card-label">Reg Hrs</span><span class="sub-card-val" style="color:var(--yellow);font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;">${r.hrs||'—'}</span></div>
