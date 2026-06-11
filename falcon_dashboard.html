@@ -753,15 +753,14 @@ function fmtDate(val) {
 function fmtDateTime(val) {
   if (!val) return '';
   const s = String(val);
-  // Already a human-readable string from Apps Script e.g. "6/10/2026, 9:42:27 PM"
-  if (s.includes('/') && s.includes(':')) return s.replace(/:\d{2}\s/, ' ').trim();
-  // ISO string
+  // Apps Script already formatted as ET e.g. "6/10/2026, 9:42:27 PM" — just trim seconds
+  if (s.includes('/') && s.includes(':')) return s.replace(/:\d{2}(\s*(AM|PM))/, '$1').trim();
+  // Sheets returned a Date object as ISO — show as-is without timezone conversion
+  // Just extract date + hour:min from the ISO string directly (don't use new Date())
   const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
   if (m) {
-    const h = parseInt(m[4]), min = m[5];
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const h12 = h % 12 || 12;
-    return m[2].replace(/^0/,'')+'/'+m[3].replace(/^0/,'')+'/'+m[1]+' '+h12+':'+min+' '+ampm;
+    // Return raw date portion only — can't reliably show ET time from ISO without conversion
+    return m[2].replace(/^0/,'')+'/'+m[3].replace(/^0/,'')+'/'+m[1];
   }
   return s.substring(0,16);
 }
