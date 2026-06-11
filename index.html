@@ -1308,18 +1308,19 @@ function doSubmit() {
       const eHrs=[],eDrv=[];
       for(let ei=0;ei<EMPS;ei++){eHrs.push(g(null,ei,false));eDrv.push(g(null,ei,true));}
 
+      const ptoCb  = document.getElementById('pto-cb-' + di);
+      const ptoCbD = document.getElementById('d-pto-cb-' + di);
+      const isPTO  = (ptoCb && ptoCb.checked) || (ptoCbD && ptoCbD.checked);
+      const nightCbM = document.getElementById('night-cb-' + di + '-' + ji);
+      const nightCbD = document.getElementById('d-night-cb-' + di + '-' + ji);
+      const isNight  = (nightCbM && nightCbM.checked) || (nightCbD && nightCbD.checked);
+
       if (!isDayPTO && (jName.trim()||jNum.trim()||(parseFloat(fHrs)||0)>0||(parseFloat(fDrv)||0)>0||eHrs.some(v=>parseFloat(v)>0)||eDrv.some(v=>parseFloat(v)>0))) {
         hasDay = true;
         daySection += '  Job '+(ji+1)+': '+(jName||'—')+' (#'+(jNum||'—')+')' + (isNight ? ' 🌙 NIGHT' : '') + '\n';
         if(fHrs) daySection += '    Foreman: '+fHrs+' hrs\n';
         eHrs.forEach((h,ei)=>{ if(h) daySection += '    '+(empNames[ei]||'Emp '+(ei+1))+': '+h+' hrs\n'; });
 
-        const ptoCb  = document.getElementById('pto-cb-' + di);
-        const ptoCbD = document.getElementById('d-pto-cb-' + di);
-        const isPTO  = (ptoCb && ptoCb.checked) || (ptoCbD && ptoCbD.checked);
-        const nightCbM = document.getElementById('night-cb-' + di + '-' + ji);
-        const nightCbD = document.getElementById('d-night-cb-' + di + '-' + ji);
-        const isNight  = (nightCbM && nightCbM.checked) || (nightCbD && nightCbD.checked);
         const row = { day, jobName:jName, jobNum:jNum, foremanHrs:fHrs, foremanDrive:fDrv,
           dayType: isPTO ? 'PTO' : 'Regular',
           jobType: isNight ? 'Night Job' : 'Regular' };
