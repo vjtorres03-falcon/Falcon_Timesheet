@@ -698,7 +698,7 @@ function renderSubmissionsTable() {
     const ptoBadge  = (r.dayType||'')==='PTO'?'<span class="pto-badge">🏖 PTO</span>':'';
     const nightBadge= (r.jobType||'')==='Night Job'?'<span class="night-badge">🌙 NIGHT</span>':'<span style="font-size:0.6rem;color:#555;font-family:\'Barlow Condensed\',sans-serif;letter-spacing:1px;">REGULAR</span>';
     const roleBadge = r.role==='Foreman'?'<span style="font-size:0.55rem;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;letter-spacing:1px;color:var(--yellow);text-transform:uppercase;">Foreman</span>':'<span style="font-size:0.55rem;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;letter-spacing:1px;color:#888;text-transform:uppercase;">Crew</span>';
-    return `<tr><td><span class="status-pill ${sc}">${esc(status)}</span></td><td>${esc(r.person||'—')} ${roleBadge}</td><td style="white-space:nowrap;">${fmtDate(r.weekEnding)}</td><td>${esc(r.day)}</td><td style="white-space:nowrap;color:#aaa;">${esc(r.dayDate||'')}</td><td>${ptoBadge||esc(r.jobName||'—')}</td><td><span class="job-num-badge">${esc(r.jobNum||'—')}</span></td><td>${ptoBadge?'':nightBadge}</td><td class="num-cell">${r.hrs||'—'}</td><td class="num-cell" style="color:#aaa;">${r.drive||'—'}</td><td style="white-space:nowrap;font-size:0.72rem;color:var(--muted);">${fmtDate(r.submittedAt)}</td><td class="notes-cell" title="${esc(r.notes)}">${esc(r.notes)||'—'}</td></tr>`;
+    return `<tr><td><span class="status-pill ${sc}">${esc(status)}</span></td><td>${esc(r.person||'—')} ${roleBadge}</td><td style="white-space:nowrap;">${fmtDate(r.weekEnding)}</td><td>${esc(r.day)}</td><td style="white-space:nowrap;color:#aaa;">${fmtDate(r.dayDate||'')}</td><td>${ptoBadge||esc(r.jobName||'—')}</td><td><span class="job-num-badge">${esc(r.jobNum||'—')}</span></td><td>${ptoBadge?'':nightBadge}</td><td class="num-cell">${r.hrs||'—'}</td><td class="num-cell" style="color:#aaa;">${r.drive||'—'}</td><td style="white-space:nowrap;font-size:0.72rem;color:var(--muted);">${fmtDate(r.submittedAt)}</td><td class="notes-cell" title="${esc(r.notes)}">${esc(r.notes)||'—'}</td></tr>`;
   }).join('');
 }
 
@@ -723,7 +723,7 @@ function renderMobSubCards() {
       </div>
       <div class="sub-card-grid">
         <div><span class="sub-card-label">Day</span><span class="sub-card-val">${esc(r.day||'—')}</span></div>
-        <div><span class="sub-card-label">Date</span><span class="sub-card-val">${esc(r.dayDate||'—')}</span></div>
+        <div><span class="sub-card-label">Date</span><span class="sub-card-val">${fmtDate(r.dayDate||'')}</span></div>
         <div><span class="sub-card-label">Job</span><span class="sub-card-val">${isPTO?'🏖 PTO':esc(r.jobName||'—')}${r.jobNum?' <span class="job-num-badge">#'+esc(r.jobNum)+'</span>':''}</span></div>
         <div><span class="sub-card-label">Type</span><span class="sub-card-val">${isNight?'🌙 Night':isPTO?'—':'Regular'}</span></div>
         <div><span class="sub-card-label">Reg Hrs</span><span class="sub-card-val" style="color:var(--yellow);font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;">${r.hrs||'—'}</span></div>
