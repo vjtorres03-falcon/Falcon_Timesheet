@@ -500,19 +500,6 @@ tr.drv.daysep td { border-bottom: 3px solid var(--black); }
 
 <script>
 
-// ── WEEK ENDING ─────────────────────────────────────────────────────
-function getNextSunday() {
-  const today = new Date();
-  const day = today.getDay();
-  const diff = day === 0 ? 7 : 7 - day;
-  const sun = new Date(today);
-  sun.setDate(today.getDate() + diff);
-  const y = sun.getFullYear();
-  const m = String(sun.getMonth()+1).padStart(2,'0');
-  const d = String(sun.getDate()).padStart(2,'0');
-  return y + '-' + m + '-' + d;
-}
-
 const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
 const JOBS = 4;
 const EMPS = 6;
