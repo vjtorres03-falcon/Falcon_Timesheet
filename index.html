@@ -1190,6 +1190,9 @@ function toggleDesktopNight(di, ji) {
   const cb = document.getElementById('d-night-cb-' + di + '-' + ji);
   const row = cb ? cb.closest('tr') : null;
   if (row) row.style.background = cb.checked ? '#e8eeff' : '';
+  // Sync mobile checkbox
+  const mobCb = document.getElementById('night-cb-' + di + '-' + ji);
+  if (mobCb) mobCb.checked = cb.checked;
 }
 // ── PTO / NIGHT JOB ─────────────────────────────────────────────────
 function togglePTO(di) {
@@ -1206,6 +1209,9 @@ function toggleNightJob(di, ji) {
   const card = document.getElementById('job-card-' + di + '-' + ji);
   const cb = document.getElementById('night-cb-' + di + '-' + ji);
   if (!card || !cb) return;
+  // Sync desktop checkbox
+  const deskCb = document.getElementById('d-night-cb-' + di + '-' + ji);
+  if (deskCb) deskCb.checked = cb.checked;
   card.classList.toggle('night-job', cb.checked);
 }
 // ── LATE MODAL ───────────────────────────────────────────────────────
@@ -1317,15 +1323,16 @@ function doSubmit() {
 
       if (!isDayPTO && (jName.trim()||jNum.trim()||(parseFloat(fHrs)||0)>0||(parseFloat(fDrv)||0)>0||eHrs.some(v=>parseFloat(v)>0)||eDrv.some(v=>parseFloat(v)>0))) {
         hasDay = true;
-        daySection += '  Job '+(ji+1)+': '+(jName||'—')+' (#'+(jNum||'—')+')\n';
+        daySection += '  Job '+(ji+1)+': '+(jName||'—')+' (#'+(jNum||'—')+')' + (isNight ? ' 🌙 NIGHT' : '') + '\n';
         if(fHrs) daySection += '    Foreman: '+fHrs+' hrs\n';
         eHrs.forEach((h,ei)=>{ if(h) daySection += '    '+(empNames[ei]||'Emp '+(ei+1))+': '+h+' hrs\n'; });
 
         const ptoCb  = document.getElementById('pto-cb-' + di);
         const ptoCbD = document.getElementById('d-pto-cb-' + di);
         const isPTO  = (ptoCb && ptoCb.checked) || (ptoCbD && ptoCbD.checked);
-        const nightCb = document.getElementById('night-cb-' + di + '-' + ji) || document.getElementById('d-night-cb-' + di + '-' + ji);
-        const isNight = nightCb && nightCb.checked;
+        const nightCbM = document.getElementById('night-cb-' + di + '-' + ji);
+        const nightCbD = document.getElementById('d-night-cb-' + di + '-' + ji);
+        const isNight  = (nightCbM && nightCbM.checked) || (nightCbD && nightCbD.checked);
         const row = { day, jobName:jName, jobNum:jNum, foremanHrs:fHrs, foremanDrive:fDrv,
           dayType: isPTO ? 'PTO' : 'Regular',
           jobType: isNight ? 'Night Job' : 'Regular' };
@@ -1441,8 +1448,9 @@ function generatePDF() {
       const jName=g('jobname',null,null),jNum=g('jobnum',null,null),fHrs=g('for',null,null),fDrv=g('for-drive',null,null);
       const eHrs=[],eDrv=[];
       for(let ei=0;ei<EMPS;ei++){eHrs.push(g(null,ei,false));eDrv.push(g(null,ei,true));}
-      const nightCb=document.getElementById('night-cb-'+di+'-'+ji)||document.getElementById('d-night-cb-'+di+'-'+ji);
-      const isNight=nightCb&&nightCb.checked;
+      const nightCbM=document.getElementById('night-cb-'+di+'-'+ji);
+      const nightCbD=document.getElementById('d-night-cb-'+di+'-'+ji);
+      const isNight=(nightCbM&&nightCbM.checked)||(nightCbD&&nightCbD.checked);
       if(jName||jNum||fHrs||eHrs.some(v=>v)) dayJobs.push({jName,jNum,fHrs,fDrv,eHrs,eDrv,isNight});
     }
     if(!dayJobs.length && !isPtoPdf) return;
