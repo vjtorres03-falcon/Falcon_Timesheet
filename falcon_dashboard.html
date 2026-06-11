@@ -640,7 +640,7 @@ function buildTrackerHtml(rows) {
       const late = isLate(sub.submittedAt, sub.weekEnding);
       const cls = late ? 'late' : 'submitted';
       const lbl = late ? 'Late' : 'Submitted';
-      const time = sub.submittedAt ? fmtDate(sub.submittedAt) : '';
+      const time = sub.submittedAt ? fmtDateTime(sub.submittedAt) : '';
       html += `<div class="foreman-card ${cls}"><div class="foreman-dot ${cls}"></div><div class="foreman-info"><div class="foreman-name">${esc(f.name)}</div><div class="foreman-status ${cls}">${lbl}</div><div class="foreman-time">${esc(time)}</div></div></div>`;
     } else {
       const week = (document.getElementById('weekSelect')||document.getElementById('mobWeekSelect')||{}).value||'';
@@ -698,7 +698,7 @@ function renderSubmissionsTable() {
     const ptoBadge  = (r.dayType||'')==='PTO'?'<span class="pto-badge">🏖 PTO</span>':'';
     const nightBadge= (r.jobType||'')==='Night Job'?'<span class="night-badge">🌙 NIGHT</span>':'<span style="font-size:0.6rem;color:#555;font-family:\'Barlow Condensed\',sans-serif;letter-spacing:1px;">REGULAR</span>';
     const roleBadge = r.role==='Foreman'?'<span style="font-size:0.55rem;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;letter-spacing:1px;color:var(--yellow);text-transform:uppercase;">Foreman</span>':'<span style="font-size:0.55rem;font-family:\'Barlow Condensed\',sans-serif;font-weight:700;letter-spacing:1px;color:#888;text-transform:uppercase;">Crew</span>';
-    return `<tr><td><span class="status-pill ${sc}">${esc(status)}</span></td><td>${esc(r.person||'—')} ${roleBadge}</td><td style="white-space:nowrap;">${fmtDate(r.weekEnding)}</td><td>${esc(r.day)}</td><td style="white-space:nowrap;color:#aaa;">${esc(r.dayDate||'')}</td><td>${ptoBadge||esc(r.jobName||'—')}</td><td><span class="job-num-badge">${esc(r.jobNum||'—')}</span></td><td>${ptoBadge?'':nightBadge}</td><td class="num-cell">${r.hrs||'—'}</td><td class="num-cell" style="color:#aaa;">${r.drive||'—'}</td><td style="white-space:nowrap;font-size:0.72rem;color:var(--muted);">${fmtDate(r.submittedAt)}</td><td class="notes-cell" title="${esc(r.notes)}">${esc(r.notes)||'—'}</td></tr>`;
+    return `<tr><td><span class="status-pill ${sc}">${esc(status)}</span></td><td>${esc(r.person||'—')} ${roleBadge}</td><td style="white-space:nowrap;">${fmtDate(r.weekEnding)}</td><td>${esc(r.day)}</td><td style="white-space:nowrap;color:#aaa;">${fmtDate(r.dayDate||'')}</td><td>${ptoBadge||esc(r.jobName||'—')}</td><td><span class="job-num-badge">${esc(r.jobNum||'—')}</span></td><td>${ptoBadge?'':nightBadge}</td><td class="num-cell">${r.hrs||'—'}</td><td class="num-cell" style="color:#aaa;">${r.drive||'—'}</td><td style="white-space:nowrap;font-size:0.72rem;color:var(--muted);">${fmtDate(r.submittedAt)}</td><td class="notes-cell" title="${esc(r.notes)}">${esc(r.notes)||'—'}</td></tr>`;
   }).join('');
 }
 
@@ -723,7 +723,7 @@ function renderMobSubCards() {
       </div>
       <div class="sub-card-grid">
         <div><span class="sub-card-label">Day</span><span class="sub-card-val">${esc(r.day||'—')}</span></div>
-        <div><span class="sub-card-label">Date</span><span class="sub-card-val">${esc(r.dayDate||'—')}</span></div>
+        <div><span class="sub-card-label">Date</span><span class="sub-card-val">${fmtDate(r.dayDate||'')}</span></div>
         <div><span class="sub-card-label">Job</span><span class="sub-card-val">${isPTO?'🏖 PTO':esc(r.jobName||'—')}${r.jobNum?' <span class="job-num-badge">#'+esc(r.jobNum)+'</span>':''}</span></div>
         <div><span class="sub-card-label">Type</span><span class="sub-card-val">${isNight?'🌙 Night':isPTO?'—':'Regular'}</span></div>
         <div><span class="sub-card-label">Reg Hrs</span><span class="sub-card-val" style="color:var(--yellow);font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:700;">${r.hrs||'—'}</span></div>
@@ -747,6 +747,23 @@ function fmtDate(val) {
   const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (m) return m[2].replace(/^0/,'')+'/'+m[3].replace(/^0/,'')+'/'+m[1];
   return s.length > 20 ? s.substring(0,16) : s;
+}
+
+// Format as date + time e.g. "6/11/2026 9:42 PM"
+function fmtDateTime(val) {
+  if (!val) return '';
+  const s = String(val);
+  // Already a human-readable string from Apps Script e.g. "6/10/2026, 9:42:27 PM"
+  if (s.includes('/') && s.includes(':')) return s.replace(/:\d{2}\s/, ' ').trim();
+  // ISO string
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if (m) {
+    const h = parseInt(m[4]), min = m[5];
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return m[2].replace(/^0/,'')+'/'+m[3].replace(/^0/,'')+'/'+m[1]+' '+h12+':'+min+' '+ampm;
+  }
+  return s.substring(0,16);
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────
