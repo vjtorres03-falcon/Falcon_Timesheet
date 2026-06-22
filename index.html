@@ -508,11 +508,13 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxmLM2_rTVzXoh0
 
 // ── WEEK ENDING ─────────────────────────────────────────────────────
 function getNextSunday() {
-  const today = new Date();
-  const day = today.getDay();
-  const diff = day === 0 ? 7 : 7 - day;
+  const now   = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const day   = today.getDay(); // 0=Sun, 1=Mon ... 6=Sat
+  // Always return the most recent Sunday (including today if Sunday)
+  const daysToLastSunday = day === 0 ? 0 : day;
   const sun = new Date(today);
-  sun.setDate(today.getDate() + diff);
+  sun.setDate(today.getDate() - daysToLastSunday);
   const y = sun.getFullYear();
   const m = String(sun.getMonth()+1).padStart(2,'0');
   const d = String(sun.getDate()).padStart(2,'0');
@@ -555,7 +557,12 @@ function loadSaved() {
     const raw = localStorage.getItem('falconTS');
     if (!raw) return;
     const data = JSON.parse(raw);
-    if (data.weekEnding) document.getElementById('weekEnding').value = data.weekEnding;
+    if (data.weekEnding) {
+      const calculatedWeek = getNextSunday();
+      if (data.weekEnding === calculatedWeek) {
+        document.getElementById('weekEnding').value = data.weekEnding;
+      }
+    }
     if (data.foreman)    document.getElementById('foreman').value    = data.foreman;
     const feEl = document.getElementById('foremanEmail');
     if (feEl && data.foremanEmail) feEl.value = data.foremanEmail;
@@ -1262,7 +1269,30 @@ function submitTimesheet() {
     document.getElementById('lateModal').classList.add('show');
     return;
   }
-  doSubmit();
+  // Check if this foreman already submitted for this week
+  showToast('Checking previous submissions…');
+  fetch(APPS_SCRIPT_URL + '?action=checkSubmission&foreman=' + encodeURIComponent(foreman) + '&weekEnding=' + encodeURIComponent(weekEnding))
+    .then(r => r.json())
+    .then(data => {
+      if (data.exists) {
+        if (confirm('⚠️ You have already submitted a timesheet for week ending ' + weekEnding + '.\n\nDo you want to REPLACE your previous submission with this one?\n\nThis cannot be undone.')) {
+          // Delete old submission then resubmit
+          showToast('Removing previous submission…');
+          fetch(APPS_SCRIPT_URL + '?action=deleteSubmission&foreman=' + encodeURIComponent(foreman) + '&weekEnding=' + encodeURIComponent(weekEnding))
+            .then(r => r.json())
+            .then(() => doSubmit())
+            .catch(() => doSubmit()); // if delete fails still try to submit
+        } else {
+          showToast('Submission cancelled.');
+        }
+      } else {
+        doSubmit();
+      }
+    })
+    .catch(() => {
+      // If check fails, proceed with submission anyway
+      doSubmit();
+    });
 }
 
 function doSubmit() {
