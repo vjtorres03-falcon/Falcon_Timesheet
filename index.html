@@ -1289,9 +1289,9 @@ function submitTimesheet() {
         doSubmit();
       }
     })
-    .catch(() => {
-      // If check fails, proceed with submission anyway
-      doSubmit();
+    .catch(err => {
+      console.error('checkSubmission error:', err);
+      showToast('⚠ Could not check previous submissions. Please try again.');
     });
 }
 
